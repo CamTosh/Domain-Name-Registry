@@ -195,24 +195,29 @@ describe("EPP Handler", () => {
     });
   });
 
+
   describe("Rate Limiting", () => {
     test("should enforce rate limits", async () => {
       const checkXml = `
-        <epp>
-          <command>
-            <check>
-              <domain:name>test.com</domain:name>
-            </check>
-          </command>
-        </epp>
-      `;
+          <epp>
+            <command>
+              <check>
+                <domain:name>test.com</domain:name>
+              </check>
+            </command>
+          </epp>
+        `;
 
-      // Make 101 requests
-      for (let i = 0; i < 101; i++) {
+      // Make 100 successful requests
+      for (let i = 0; i < 100; i++) {
         await handleEppRequest(socket as any, Buffer.from(checkXml), state);
       }
 
-      // The last request should be rate limited
+      // Clear the response buffer
+      socket.writtenData = [];
+
+      // The 101st request should be rate limited
+      await handleEppRequest(socket as any, Buffer.from(checkXml), state);
       expect(socket.getLastResponse()).toContain("Rate limit exceeded");
     });
   });
@@ -226,17 +231,17 @@ describe("EPP Handler", () => {
 
     test("should handle unknown command", async () => {
       const unknownXml = `
-        <epp>
-          <command>
-            <unknown>
-              <domain:name>test.com</domain:name>
-            </unknown>
-          </command>
-        </epp>
-      `;
+          <epp>
+            <command>
+              <unknown>
+                <something>test.com</something>
+              </unknown>
+            </command>
+          </epp>
+        `;
 
       await handleEppRequest(socket as any, Buffer.from(unknownXml), state);
-      expect(socket.getLastResponse()).toContain("Unknown command");
+      expect(socket.getLastResponse()).toContain("<msg>Unknown command</msg>");
     });
   });
 });

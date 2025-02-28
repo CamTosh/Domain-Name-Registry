@@ -35,8 +35,14 @@ export async function handleEppRequest(socket: Socket, data: Buffer, state: AppS
         socket.write(generateResponse("unknownCommand"));
     }
   } catch (error) {
-    logger.error("EPP error:", error);
-    socket.write(generateResponse("systemError"));
+    if (error instanceof Error) {
+      if (error.message === "Unknown command") {
+        socket.write(generateResponse("unknownCommand"));
+      } else {
+        logger.error("EPP error:", error);
+        socket.write(generateResponse("systemError"));
+      }
+    }
   }
 }
 
