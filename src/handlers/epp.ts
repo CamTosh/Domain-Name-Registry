@@ -16,7 +16,7 @@ export async function handleEppRequest(socket: Socket, data: Buffer, state: AppS
 
   try {
     const request = data.toString();
-    const command = await parseXml(request);
+    const command = parseXml(request);
 
     switch (command.type) {
       case "login":
@@ -67,7 +67,15 @@ function handleCheck(socket: Socket, command: CheckCommand, state: AppState) {
 function handleCreate(socket: Socket, command: CreateCommand, state: AppState) {
   try {
     queries.createDomain(state.db, command.domain, command.registrar);
-    socket.write(generateResponse("createSuccess", { domain: command.domain }));
+    const domain = queries.getDomainInfo(state.db, command.domain);
+    // Not sure of this one
+    if (domain && domain.registrar === command.registrar) {
+      socket.write(generateResponse("createSuccess", domain));
+    } else {
+      socket.write(generateResponse("notFound"));
+    }
+
+
   } catch (error) {
     socket.write(generateResponse("createError"));
   }
@@ -76,7 +84,7 @@ function handleCreate(socket: Socket, command: CreateCommand, state: AppState) {
 function handleInfo(socket: Socket, command: InfoCommand, state: AppState) {
   const domain = queries.getDomainInfo(state.db, command.domain);
   if (domain) {
-    socket.write(generateResponse("infoResponse", { domain }));
+    socket.write(generateResponse("infoResponse", domain));
   } else {
     socket.write(generateResponse("notFound"));
   }

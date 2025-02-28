@@ -1,5 +1,14 @@
 import type { Database } from "bun:sqlite";
 
+export interface Greeting {
+  svID: string;
+  svDate: string;
+  versions: string[];
+  langs: string[];
+  objURIs: string[];
+  extURIs?: string[];
+}
+
 export interface BaseCommand {
   type: 'login' | 'check' | 'create' | 'info';
 }
