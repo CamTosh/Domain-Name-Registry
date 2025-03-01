@@ -297,7 +297,7 @@ describe("EPP Handler", () => {
         `;
 
       await handleEppRequest(socket as any, Buffer.from(unknownXml), state);
-      expect(socket.getLastResponse()).toContain("<msg>Unknown command</msg>");
+      expect(socket.getLastResponse()).toInclude('<msg lang="en">Unknown command</msg>');
     });
   });
 });
