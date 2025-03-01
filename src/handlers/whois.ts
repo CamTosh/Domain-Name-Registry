@@ -36,9 +36,20 @@ export function handleWhoisRequest(socket: Socket, data: Buffer, state: AppState
   }
 }
 
+const domainCache = new Map<string, { data: string, timestamp: number }>();
+const CACHE_TTL = 42 * 1000; // 42 seconds in milliseconds
+
 function handleDomainLookup(socket: Socket, domain: string, state: AppState) {
   if (!isValidDomain(domain)) {
     sendError(socket, `Invalid domain name format`);
+    return;
+  }
+
+  const now = Date.now();
+  const cached = domainCache.get(domain);
+
+  if (cached && (now - cached.timestamp) < CACHE_TTL) {
+    socket.write(cached.data + CRLF);
     return;
   }
 
@@ -51,6 +62,8 @@ function handleDomainLookup(socket: Socket, domain: string, state: AppState) {
 
   const registrarInfo = queries.getRegistrarInfo(state.db, domainInfo.registrar);
   const response = formatWhoisResponse({ domain: domainInfo, registrar: registrarInfo });
+
+  domainCache.set(domain, { data: response, timestamp: now });
 
   socket.write(response + CRLF);
 }

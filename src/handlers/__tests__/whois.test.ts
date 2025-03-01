@@ -50,20 +50,21 @@ describe("WHOIS Handler", () => {
     handleWhoisRequest(socket as any, Buffer.from("test.tsh"), state);
 
     const response = socket.getResponse();
-    expect(response).toContain("Domain Information:");
-    expect(response).toContain("Domain Name: test.tsh");
-    expect(response).toContain("Domain Status: active");
-    expect(response).toContain("Created Date:");
-    expect(response).toContain("Expiration Date:");
+    expect(response).toContain("domain:       test.tsh");
+    expect(response).toContain("status:       ACTIVE");
+    expect(response).toContain("created:");
+    expect(response).toContain("expires:");
+    expect(response).toContain(">>> Last update of WHOIS database:");
   });
 
   test("should return registrar information", () => {
     handleWhoisRequest(socket as any, Buffer.from("registrar test1"), state);
 
     const response = socket.getResponse();
-    expect(response).toContain("Registrar Information:");
-    expect(response).toContain("Registrar ID: test1");
+    expect(response).toContain("registrar:      test1");
+    expect(response).toContain("organisation:   BULLSHIT Registry Accredited Registrar");
     expect(response).toContain("test.tsh (active)"); // Should show the domain we created
+    expect(response).toContain("source:        BULLSHIT");
   });
 
   test("should handle non-existent domain", () => {

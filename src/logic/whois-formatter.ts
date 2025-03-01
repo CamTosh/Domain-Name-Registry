@@ -22,36 +22,51 @@ export function formatWhoisResponse(options: WhoisResponseOptions): string {
 }
 
 function formatDomainSection(domain: Domain): string {
+  const now = new Date().toISOString();
+
   return [
-    "Domain Information:",
-    "-----------------",
-    `Domain Name: ${domain.name}`,
-    `Domain Status: ${domain.status}`,
-    `Created Date: ${formatDate(domain.created_at)}`,
-    domain.updated_at ? `Last Updated Date: ${formatDate(domain.updated_at)}` : null,
-    domain.expiry_date ? `Expiration Date: ${formatDate(domain.expiry_date)}` : null,
-    `Registrar: ${domain.registrar}`,
-    "",
-    "DNSSEC: unsigned",
-  ].filter(Boolean).join("\n");
+    `% BULLSHIT WHOIS server`,
+    `% for more information on BULLSHIT, visit https://nic.bullshit.video`,
+    `% This query returned 1 object`,
+    ``,
+    `domain:       ${domain.name.toLowerCase()}`,
+    `organisation: BULLSHIT Registry Services`,
+    `registrar:    ${domain.registrar}`,
+    `status:       ${domain.status.toUpperCase()}`,
+    `created:      ${formatDate(domain.created_at)}`,
+    `changed:      ${domain.updated_at ? formatDate(domain.updated_at) : 'not available'}`,
+    `expires:      ${domain.expiry_date ? formatDate(domain.expiry_date) : 'not available'}`,
+    ``,
+    `nserver:      ns1.todo.bullshit.video`,
+    `dnssec:       unsigned`,
+    ``,
+    `whois:        whois.nic.bullshit.video`,
+    `source:       BULLSHIT`,
+    ``,
+    `>>> Last update of WHOIS database: ${now} <<<`,
+  ].join('\n');
 }
 
 function formatRegistrarSection(registrar: Registrar, domains?: Domain[]): string {
   const section = [
-    "Registrar Information:",
-    "--------------------",
-    `Registrar ID: ${registrar.id}`,
-    `Available Credits: ${registrar.credits}`,
+    `registrar:      ${registrar.id}`,
+    `organisation:   BULLSHIT Registry Accredited Registrar`,
+    `credits:        ${registrar.credits}`,
   ];
 
   if (domains?.length) {
     section.push(
-      "",
-      "Registered Domains:",
-      "----------------",
-      ...domains.map(d => `${d.name} (${d.status})`)
+      ``,
+      `domains:       ${domains.length}`,
+      ...domains.map(d => `    ${d.name.toLowerCase()} (${d.status})`)
     );
   }
+
+  section.push(
+    ``,
+    `source:        BULLSHIT`
+  );
+
 
   return section.join("\n");
 }
