@@ -30,6 +30,24 @@ export function initializeDatabase(db: Database) {
     INSERT OR IGNORE INTO registrars (id, password, credits)
     VALUES ('test1', 'test1', 1000), ('test2', 'test2', 1000)
   `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS registrar_actions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      registrar_id TEXT NOT NULL,
+      domain TEXT NOT NULL,
+      action TEXT NOT NULL,
+      timestamp INTEGER NOT NULL,
+      success BOOLEAN NOT NULL,
+      details TEXT,
+      FOREIGN KEY (registrar_id) REFERENCES registrars(id)
+    )
+  `);
+
+  db.run(`
+    CREATE INDEX IF NOT EXISTS idx_registrar_actions
+    ON registrar_actions(registrar_id, timestamp)
+  `);
 }
 
 export const queries = {
@@ -151,6 +169,86 @@ export const queries = {
       AND expiry_date < ?
       order by name asc
     `).all(todayStart, tomorrowStart) as { name: string }[];
+  },
+
+  /*
+   * Log
+  */
+  logRegistrarAction: (
+    db: Database,
+    {
+      registrarId,
+      domain,
+      action,
+      success,
+      details = null
+    }: {
+      registrarId: string;
+      domain: string;
+      action: string;
+      success: boolean;
+      details?: string | null;
+    }
+  ) => {
+    return db.prepare(`
+      INSERT INTO registrar_actions (
+        registrar_id,
+        domain,
+        action,
+        timestamp,
+        success,
+        details
+      ) VALUES (?, ?, ?, ?, ?, ?)
+    `).run(registrarId, domain, action, Date.now(), success ? 1 : 0, details);
+  },
+
+  getRegistrarStats: (db: Database, registrarId: string, startTime: number) => {
+    return db.prepare(`
+      SELECT
+        action,
+        COUNT(*) as count,
+        SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) as successful,
+        COUNT(DISTINCT domain) as unique_domains
+      FROM registrar_actions
+      WHERE registrar_id = ?
+        AND timestamp >= ?
+      GROUP BY action
+      ORDER BY count DESC
+    `).all(registrarId, startTime) as {
+      action: string;
+      count: number;
+      successful: number;
+      unique_domains: number;
+    }[];
+  },
+
+  getRegistrarTimeline: (db: Database, registrarId: string, startTime: number) => {
+    return db.prepare(`
+      SELECT domain, action, timestamp, success, details FROM registrar_actions
+      WHERE registrar_id = ?
+      AND timestamp >= ?
+      ORDER BY timestamp ASC
+    `).all(registrarId, startTime) as {
+      domain: string;
+      action: string;
+      timestamp: number;
+      success: boolean;
+      details: string | null;
+    }[];
+  },
+
+  getDomainHistory: (db: Database, domain: string) => {
+    return db.prepare(`
+      SELECT registrar_id, action, timestamp, success, details FROM registrar_actions
+      WHERE domain = ?
+      ORDER BY timestamp ASC
+    `).all(domain) as {
+      registrar_id: string;
+      action: string;
+      timestamp: number;
+      success: boolean;
+      details: string | null;
+    }[];
   }
 };
 

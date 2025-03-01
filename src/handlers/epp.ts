@@ -1,7 +1,7 @@
 import type { Socket } from "bun";
 import { logger } from "../utils/logger";
 import { queries } from "../database";
-import type { AppState, LoginCommand, CheckCommand, CreateCommand, InfoCommand } from "../types";
+import type { AppState, LoginCommand, CheckCommand, CreateCommand, InfoCommand, EppCommand } from "../types";
 import { generateResponse } from "../logic/epp-responses";
 import { checkRateLimit } from "../logic/rate-limit";
 import { parseXml } from "../logic/xml";
@@ -14,12 +14,13 @@ export async function handleEppRequest(socket: Socket, data: Buffer, state: AppS
     return;
   }
 
+  let command: EppCommand | undefined;
+  let registrarId: string | undefined;
+
   try {
     const request = data.toString();
-    const command = parseXml(request);
+    command = parseXml(request);
 
-    // Handle session and get registrar ID
-    let registrarId: string | undefined;
 
     if (command.type === "login") {
       registrarId = command.id;
@@ -70,6 +71,15 @@ export async function handleEppRequest(socket: Socket, data: Buffer, state: AppS
       default:
         socket.write(generateResponse("unknownCommand"));
     }
+
+    queries.logRegistrarAction(state.db, {
+      registrarId,
+      success: true,
+      action: command.type,
+      details: JSON.stringify(command),
+      domain: 'domain' in command ? command.domain : '',
+    });
+
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "Unknown command") {
@@ -78,6 +88,16 @@ export async function handleEppRequest(socket: Socket, data: Buffer, state: AppS
         logger.error("EPP error:", error);
         socket.write(generateResponse("systemError"));
       }
+    }
+
+    if (command && registrarId) {
+      queries.logRegistrarAction(state.db, {
+        registrarId,
+        success: false,
+        action: command.type,
+        details: JSON.stringify(command),
+        domain: 'domain' in command ? command.domain : '',
+      });
     }
   }
 }
