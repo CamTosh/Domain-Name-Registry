@@ -3,6 +3,9 @@ import type { Domain, Registrar } from "./types";
 import { calculateExpiryDate } from "./utils/domains";
 
 export function initializeDatabase(db: Database) {
+  // db.run(`delete from domains;`);
+  // db.run(`delete from registrars;`)
+
   db.run(`
     CREATE TABLE IF NOT EXISTS domains (
       name TEXT PRIMARY KEY,
@@ -37,9 +40,8 @@ export const queries = {
     db.prepare("SELECT name FROM domains WHERE name = ?")
       .get(domain.toLowerCase()) as Pick<Domain, 'name'> | undefined,
 
-  createDomain: (db: Database, domain: string, registrar: string) => {
+  createDomain: (db: Database, domain: string, registrar: string, expiryDate = calculateExpiryDate()) => {
     const now = Date.now();
-    const expiryDate = calculateExpiryDate();
 
     return db.prepare(`
       INSERT INTO domains (

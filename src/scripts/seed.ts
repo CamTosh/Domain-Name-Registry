@@ -1,5 +1,5 @@
 import { Database } from "bun:sqlite";
-import { initializeDatabase } from "../database";
+import { initializeDatabase, queries } from "../database";
 
 const RESERVED_DOMAINS = [
   'nic.tsh',    // Registry information
@@ -51,7 +51,6 @@ const SAMPLE_DOMAINS = [
   'flight.tsh',
   'hotel.tsh',
   'restaurant.tsh',
-  'movie.tsh',
   'design.tsh',
   'software.tsh',
   'career.tsh',
@@ -107,7 +106,6 @@ const SAMPLE_DOMAINS = [
   'world.tsh',
   'system.tsh',
   'platform.tsh',
-  'mobile.tsh',
   'file.tsh',
   'content.tsh',
   'channel.tsh',
@@ -119,66 +117,6 @@ async function seed() {
 
   const db = new Database("registry.sqlite", { create: true });
   initializeDatabase(db);
-
-  const now = Date.now();
-  const oneYear = 365 * 24 * 60 * 60 * 1000;
-
-  // Insert reserved domains (assigned to registry operator)
-  console.log("\nCreating reserved domains...");
-  for (const domain of RESERVED_DOMAINS) {
-    try {
-      db.run(`
-        INSERT OR IGNORE INTO domains (
-          name,
-          status,
-          registrar,
-          created_at,
-          updated_at,
-          expiry_date
-        ) VALUES (?, ?, ?, ?, ?, ?)
-      `, [
-        domain,
-        'active',
-        'registry',  // Special registrar for reserved domains
-        now,
-        now,
-        now + (10 * oneYear)  // 10 years validity for reserved domains
-      ]);
-      console.log(`✓ Reserved: ${domain}`);
-    } catch (error) {
-      console.error(`✗ Failed to reserve ${domain}:`, error);
-    }
-  }
-
-  // Insert sample domains (distributed between test registrars)
-  console.log("\nCreating sample domains...");
-  const registrars = ['test1', 'test2'];
-
-  for (const domain of SAMPLE_DOMAINS) {
-    try {
-      const registrar = registrars[Math.floor(Math.random() * registrars.length)];
-      db.run(`
-        INSERT OR IGNORE INTO domains (
-          name,
-          status,
-          registrar,
-          created_at,
-          updated_at,
-          expiry_date
-        ) VALUES (?, ?, ?, ?, ?, ?)
-      `, [
-        domain,
-        'active',
-        registrar,
-        now,
-        now,
-        now + oneYear
-      ]);
-      console.log(`✓ Created: ${domain} (${registrar})`);
-    } catch (error) {
-      console.error(`✗ Failed to create ${domain}:`, error);
-    }
-  }
 
   // Add registry operator if not exists
   console.log("\nEnsuring registry operator exists...");
@@ -197,6 +135,33 @@ async function seed() {
     console.log("✓ Registry operator account configured");
   } catch (error) {
     console.error("✗ Failed to create registry operator:", error);
+  }
+
+  console.log("\nCreating reserved domains...");
+  for (const domain of RESERVED_DOMAINS) {
+    try {
+
+      queries.createDomain(db, domain, 'registry');
+      console.log(`✓ Reserved: ${domain}`);
+    } catch (error) {
+      console.error(`✗ Failed to reserve ${domain}:`, error);
+    }
+  }
+
+  console.log("\nCreating random domains...");
+  for (const domain of SAMPLE_DOMAINS) {
+    try {
+      // Random expiry between 1 hour and tomorrow
+      const now = Date.now();
+      const oneHour = now + (60 * 60 * 1000);
+      const tomorrow = now + (24 * 60 * 60 * 1000);
+      const randomExpiry = Math.floor(Math.random() * (tomorrow - oneHour) + oneHour);
+
+      queries.createDomain(db, domain, 'registry', randomExpiry);
+      console.log(`✓ Reserved: ${domain}`);
+    } catch (error) {
+      console.error(`✗ Failed to reserve ${domain}:`, error);
+    }
   }
 
   console.log("\nSeeding completed!");
