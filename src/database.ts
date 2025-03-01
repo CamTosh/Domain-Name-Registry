@@ -32,7 +32,6 @@ export const queries = {
   /*
    * Domain
   */
-
   checkDomain: (db: Database, domain: string): Pick<Domain, 'name'> | undefined =>
     db.prepare("SELECT name FROM domains WHERE name = ?")
       .get(domain) as Pick<Domain, 'name'> | undefined,
@@ -64,7 +63,6 @@ export const queries = {
   /*
    * Registrar
   */
-
   getRegistrarDomains: (db: Database, registrarId: string): Domain[] =>
     db.prepare(
       "SELECT * FROM domains WHERE registrar = ?"
@@ -81,9 +79,25 @@ export const queries = {
     ).get(registrarId) as Registrar | undefined,
 
   /*
-   * Licences
+   * Expiry
   */
+  todayExpiration: (db: Database) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStart = today.getTime();
 
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStart = tomorrow.getTime();
+
+    return db.prepare(`
+      SELECT name FROM domains
+      WHERE status = 'active'
+      AND expiry_date >= ?
+      AND expiry_date < ?
+      order by name asc
+    `).all(todayStart, tomorrowStart) as { name: string }[];
+  }
 };
 
 export type Queries = typeof queries;

@@ -1,7 +1,7 @@
 import { Database } from "bun:sqlite";
 import { handleEppRequest } from "./handlers/epp";
 import { handleWhoisRequest } from "./handlers/whois";
-import { initializeDatabase } from "./database";
+import { initializeDatabase, queries } from "./database";
 import { logger } from "./utils/logger";
 import type { AppState } from "./types";
 import { SessionManager } from "./logic/session";
@@ -48,17 +48,17 @@ const servers = {
   */
   api: Bun.serve({
     port: 3000,
-    fetch: (req) => {
-      const url = new URL(req.url);
+    routes: {
+      "/health": new Response("OK"),
+      "/today-expiration": (req) => {
+        const domains = queries.todayExpiration(state.db);
+        const names = domains.map((domain) => domain.name);
 
-      return url.pathname === "/health"
-        ? new Response("OK")
-        : url.pathname === "/metrics"
-          ? new Response(JSON.stringify({
-            sessions: state.sessionManager.size,
-            rateLimits: state.rateLimit.size,
-          }))
-          : new Response("Not Found", { status: 404 });
+        return new Response(JSON.stringify(names));
+      },
+    },
+    fetch(req) {
+      return new Response("Not Found", { status: 404 });
     },
   }),
 };

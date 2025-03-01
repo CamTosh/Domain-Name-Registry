@@ -1,5 +1,6 @@
 import { logger } from "../utils/logger";
 import type { AppState } from "../types";
+import { queries } from "../database";
 
 const SESSION_DURATION = 42 * 60 * 1000; // 42 minutes
 
@@ -14,26 +15,12 @@ Expected end: ${sessionEnd.toISOString()}
 Duration: ${duration / 1000 / 60} minutes
 =========================`);
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayStart = today.getTime();
 
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowStart = tomorrow.getTime();
-
-  // Get domains expiring exactly today
-  const expiringDomains = state.db.prepare(`
-      SELECT name
-      FROM domains
-      WHERE expiry_date >= ?
-      AND expiry_date < ?
-      AND status = 'active'
-    `).all(todayStart, tomorrowStart) as { name: string }[];
-
+  const expiringDomains = queries.todayExpiration(state.db);
   if (expiringDomains.length === 0) {
     logger.info("No domains expiring today");
     logger.info("=== Session ended (no domains) ===");
+
     return;
   }
 
