@@ -112,6 +112,24 @@ export const queries = {
       "SELECT * FROM registrars WHERE id = ?"
     ).get(registrarId) as Registrar | undefined,
 
+  createRegistrar: (db: Database, id: string, password: string) => {
+    const initialCredits = 1000;
+
+    try {
+      db.prepare(`
+        INSERT INTO registrars (id, password, credits)
+        VALUES (?, ?, ?)
+      `).run(id.toLowerCase(), password, initialCredits);
+
+      return { success: true, registrarId: id };
+    } catch (error) {
+      if ((error as any).code === 'SQLITE_CONSTRAINT') {
+        return { success: false, error: 'Registrar ID already exists' };
+      }
+
+      throw error;
+    }
+  },
   /*
    * Expiry
   */
