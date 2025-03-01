@@ -1,4 +1,5 @@
 import type { Database } from "bun:sqlite";
+import type { SessionManager } from "./utils/session";
 
 export interface Greeting {
   svID: string;
@@ -11,6 +12,7 @@ export interface Greeting {
 
 export interface BaseCommand {
   type: 'login' | 'check' | 'create' | 'info';
+  sessionId?: string;
 }
 
 export interface LoginCommand extends BaseCommand {
@@ -55,6 +57,8 @@ export interface Registrar {
 export interface Session {
   registrar: string;
   loginTime: number;
+  lastActivity: number;
+  isActive: boolean;
 }
 
 export interface RateLimit {
@@ -64,6 +68,6 @@ export interface RateLimit {
 
 export interface AppState {
   db: Database;
-  sessions: Map<string, Session>;
   rateLimit: Map<string, RateLimit>;
+  sessionManager: SessionManager;
 }

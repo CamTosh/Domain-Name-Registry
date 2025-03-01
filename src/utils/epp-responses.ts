@@ -9,18 +9,36 @@ interface CheckResponseData {
   available: boolean;
 }
 
+interface CreateResponseData {
+  name: string;
+  created_at: number;
+  expiry_date: number | null;
+  sessionId: string;
+}
+
+interface InfoResponseData extends Domain {
+  sessionId: string;
+}
+
 type ResponseTypes = {
   authError: never;
   checkResponse: CheckResponseData;
   createError: never;
-  createSuccess: Domain;
-  infoResponse: Domain;
+  createSuccess: CreateResponseData;
+  infoResponse: InfoResponseData;
   loginSuccess: LoginSuccessData;
   notFound: never;
   rateLimitExceeded: never;
   systemError: never;
   unknownCommand: never;
 }
+
+const addTransactionId = (sessionId?: string) => `
+  <trID>
+    ${sessionId ? `<clTRID>${sessionId}</clTRID>` : ''}
+    <svTRID>${crypto.randomUUID()}</svTRID>
+  </trID>
+`;
 
 // Response templates
 const responses = {
@@ -47,11 +65,10 @@ const responses = {
         </domain:cd>
       </domain:chkData>
     </resData>
-    <trID>
-      <svTRID>${crypto.randomUUID()}</svTRID>
-    </trID>
+    ${addTransactionId(data.sessionId)}
   </response>
 </epp>`,
+
 
   createError: () => `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <epp xmlns="urn:ietf:params:xml:ns:epp-1.0">

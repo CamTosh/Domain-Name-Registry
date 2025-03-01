@@ -3,6 +3,7 @@ import { handleEppRequest } from "./handlers/epp";
 import { handleWhoisRequest } from "./handlers/whois";
 import { initializeDatabase } from "./database";
 import { logger } from "./utils/logger";
+import { SessionManager } from "./utils/session";
 import type { AppState } from "./types";
 
 const db = new Database("registry.sqlite", { create: true });
@@ -13,6 +14,7 @@ export const state: AppState = {
   db: new Database("registry.sqlite", { create: true }),
   sessions: new Map(),
   rateLimit: new Map(),
+  sessionManager: new SessionManager(new Map()),
 };
 
 // EPP Server (Port 700)
@@ -44,7 +46,7 @@ Bun.serve({
         return new Response("OK");
       case "/metrics":
         return new Response(JSON.stringify({
-          sessions: state.sessions.size,
+          sessions: state.sessionManager.size,
           rateLimits: state.rateLimit.size,
         }));
       default:
@@ -54,3 +56,4 @@ Bun.serve({
 });
 
 logger.info("All servers started");
+state.sessionManager.startCleanup();

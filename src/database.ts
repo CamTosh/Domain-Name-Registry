@@ -29,6 +29,10 @@ export function initializeDatabase(db: Database) {
 }
 
 export const queries = {
+  /*
+   * Domain
+  */
+
   checkDomain: (db: Database, domain: string): Pick<Domain, 'name'> | undefined =>
     db.prepare("SELECT name FROM domains WHERE name = ?")
       .get(domain) as Pick<Domain, 'name'> | undefined,
@@ -57,6 +61,10 @@ export const queries = {
       "UPDATE domains SET status = ?, updated_at = ? WHERE name = ?"
     ).run(status, Date.now(), domain),
 
+  /*
+   * Registrar
+  */
+
   getRegistrarDomains: (db: Database, registrarId: string): Domain[] =>
     db.prepare(
       "SELECT * FROM domains WHERE registrar = ?"
@@ -71,6 +79,11 @@ export const queries = {
     db.prepare(
       "SELECT * FROM registrars WHERE id = ?"
     ).get(registrarId) as Registrar | undefined,
+
+  /*
+   * Licences
+  */
+
 };
 
 export type Queries = typeof queries;
