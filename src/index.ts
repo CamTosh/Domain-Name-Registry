@@ -42,6 +42,10 @@ const servers = {
     },
   }),
 
+  /*
+   TODO: add leaderboard
+   TODO: add metrics
+  */
   api: Bun.serve({
     port: 3000,
     fetch: (req) => {

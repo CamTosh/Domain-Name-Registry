@@ -6,7 +6,8 @@
   "scripts": {
     "test": "bun test",
     "seed": "bun run src/scripts/seed.ts",
-    "start": "bun src/index.ts"
+    "start": "bun src/index.ts",
+    "expire": "bun run src/cron/expiry.ts"
   },
   "devDependencies": {
     "@types/bun": "latest"

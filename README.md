@@ -64,6 +64,54 @@ The system implements a graduated penalty mechanism:
    - Request Processing Delay: 2 second delay added
    - Token Consumption: 5 tokens deducted from registrar's credit
 
+## Domain Expiry System
+
+The registry implements an automated domain expiry system that releases expired domains in a random order during a 42-minute window each day.
+
+### How it Works
+
+1. At 15:00 each day, the system identifies domains expiring that day
+2. These domains are released randomly over a 42-minute period (15:00 - 15:42)
+3. When a domain is released, its status changes from 'active' to 'inactive'
+4. Released domains become available for registration
+
+### Cron Setup
+
+1. Edit your crontab:
+```bash
+crontab -e
+```
+
+2. Add this line to run the expiry process at 15:00 daily:
+```bash
+0 15 * * * cd /path/to/registry && bun run expire >> /var/log/registry/expiry.log 2>&1
+```
+
+The cron expression explained:
+```
+┌───────────── minute (0)
+│ ┌───────────── hour (15)
+│ │ ┌───────────── day of month (*)
+│ │ │ ┌───────────── month (*)
+│ │ │ │ ┌───────────── day of week (*)
+│ │ │ │ │
+0 15 * * *
+```
+
+### Prerequisites
+
+1. Create log directory:
+```bash
+sudo mkdir -p /var/log/registry
+sudo chown $USER:$USER /var/log/registry
+```
+
+2. Test the cron job:
+```bash
+bun run expire
+tail -f /var/log/registry/expiry.log
+```
+
 ## Using WHOIS
 
 The WHOIS service runs on port 43 and supports several query types:
