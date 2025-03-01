@@ -1,6 +1,6 @@
 # TSH Registry - EPP & WHOIS Server
 
-A modern domain registry system implementing EPP (Extensible Provisioning Protocol) and WHOIS services for the .tsh TLD, built with Bun.
+A modern domain registry system implementing EPP (Extensible Provisioning Protocol) and WHOIS services for the .tsh TLD, built with Bun and 0 dependencies.
 
 ## Features
 
