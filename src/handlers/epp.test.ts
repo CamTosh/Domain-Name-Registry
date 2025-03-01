@@ -4,23 +4,7 @@ import type { AppState } from "../../src/types";
 import { initializeDatabase } from "../database";
 import { Database } from "bun:sqlite";
 import { SessionManager } from "../utils/session";
-
-class MockSocket {
-  public writtenData: string[] = [];
-  public remoteAddress = "127.0.0.1";
-
-  write(data: string) {
-    this.writtenData.push(data);
-  }
-
-  end() {
-    // Mock implementation
-  }
-
-  getLastResponse() {
-    return this.writtenData[this.writtenData.length - 1];
-  }
-}
+import { MockSocket } from "../utils/test";
 
 describe("EPP Handler", () => {
   let state: AppState;
