@@ -44,13 +44,12 @@ const addTransactionId = (sessionId?: string) => `
   </trID>
 `;
 
-// Response templates
 const responses = {
   authError: () => `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <epp xmlns="urn:ietf:params:xml:ns:epp-1.0">
   <response>
     <result code="2200">
-      <msg>Authentication error</msg>
+      <msg lang="en">Authentication error</msg>
     </result>
   </response>
 </epp>`,
@@ -59,7 +58,7 @@ const responses = {
 <epp xmlns="urn:ietf:params:xml:ns:epp-1.0">
   <response>
     <result code="1000">
-      <msg>Command completed successfully</msg>
+      <msg lang="en">Command completed successfully</msg>
     </result>
     <resData>
       <domain:chkData xmlns:domain="urn:ietf:params:xml:ns:domain-1.0">
@@ -77,7 +76,7 @@ const responses = {
 <epp xmlns="urn:ietf:params:xml:ns:epp-1.0">
   <response>
     <result code="2005">
-      <msg>Invalid domain name format</msg>
+      <msg lang="en">Invalid domain name format</msg>
     </result>
   </response>
 </epp>`,
@@ -86,7 +85,7 @@ const responses = {
 <epp xmlns="urn:ietf:params:xml:ns:epp-1.0">
   <response>
     <result code="2302">
-      <msg>Domain name is not available</msg>
+      <msg lang="en">Domain name is not available</msg>
     </result>
   </response>
 </epp>`,
@@ -95,7 +94,7 @@ const responses = {
 <epp xmlns="urn:ietf:params:xml:ns:epp-1.0">
   <response>
     <result code="2302">
-      <msg>Object exists</msg>
+      <msg lang="en">Object exists</msg>
     </result>
   </response>
 </epp>`,
@@ -104,7 +103,7 @@ const responses = {
 <epp xmlns="urn:ietf:params:xml:ns:epp-1.0">
   <response>
     <result code="1000">
-      <msg>Command completed successfully</msg>
+      <msg lang="en">Command completed successfully</msg>
     </result>
     <resData>
       <domain:creData xmlns:domain="urn:ietf:params:xml:ns:domain-1.0">
@@ -113,9 +112,7 @@ const responses = {
         <domain:exDate>${data.expiry_date}</domain:exDate>
       </domain:creData>
     </resData>
-    <trID>
-      <svTRID>${crypto.randomUUID()}</svTRID>
-    </trID>
+    ${addTransactionId()}
   </response>
 </epp>`,
 
@@ -123,11 +120,12 @@ const responses = {
 <epp xmlns="urn:ietf:params:xml:ns:epp-1.0">
   <response>
     <result code="1000">
-      <msg>Command completed successfully</msg>
+      <msg lang="en">Command completed successfully</msg>
     </result>
     <resData>
       <domain:infData xmlns:domain="urn:ietf:params:xml:ns:domain-1.0">
         <domain:name>${data.name}</domain:name>
+        <domain:roid>EXAMPLE1-REP</domain:roid>
         <domain:status s="${data.status}"/>
         <domain:registrant>${data.registrar}</domain:registrant>
         <domain:crDate>${data.created_at}</domain:crDate>
@@ -135,9 +133,7 @@ const responses = {
         <domain:exDate>${data.expiry_date}</domain:exDate>
       </domain:infData>
     </resData>
-    <trID>
-      <svTRID>${crypto.randomUUID()}</svTRID>
-    </trID>
+    ${addTransactionId()}
   </response>
 </epp>`,
 
@@ -145,11 +141,9 @@ const responses = {
 <epp xmlns="urn:ietf:params:xml:ns:epp-1.0">
   <response>
     <result code="1000">
-      <msg>Command completed successfully</msg>
+      <msg lang="en">Command completed successfully</msg>
     </result>
-    <trID>
-      <svTRID>${data.sessionId}</svTRID>
-    </trID>
+    ${addTransactionId(data.sessionId)}
   </response>
 </epp>`,
 
@@ -157,7 +151,7 @@ const responses = {
 <epp xmlns="urn:ietf:params:xml:ns:epp-1.0">
   <response>
     <result code="2303">
-      <msg>Object does not exist</msg>
+      <msg lang="en">Object does not exist</msg>
     </result>
   </response>
 </epp>`,
@@ -166,7 +160,7 @@ const responses = {
 <epp xmlns="urn:ietf:params:xml:ns:epp-1.0">
   <response>
     <result code="2308">
-      <msg>Rate limit exceeded</msg>
+      <msg lang="en">Rate limit exceeded</msg>
     </result>
   </response>
 </epp>`,
@@ -175,7 +169,7 @@ const responses = {
 <epp xmlns="urn:ietf:params:xml:ns:epp-1.0">
   <response>
     <result code="2400">
-      <msg>Command failed</msg>
+      <msg lang="en">Command failed</msg>
     </result>
   </response>
 </epp>`,
@@ -184,7 +178,7 @@ const responses = {
 <epp xmlns="urn:ietf:params:xml:ns:epp-1.0">
   <response>
     <result code="2000">
-      <msg>Unknown command</msg>
+      <msg lang="en">Unknown command</msg>
     </result>
   </response>
 </epp>`,
@@ -193,7 +187,7 @@ const responses = {
 <epp xmlns="urn:ietf:params:xml:ns:epp-1.0">
   <response>
     <result code="2308">
-      <msg>Usage limit exceeded</msg>
+      <msg lang="en">Usage limit exceeded</msg>
     </result>
   </response>
 </epp>`,

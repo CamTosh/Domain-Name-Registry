@@ -13,7 +13,6 @@ export function parseXml(xml: string): EppCommand {
 
   if (command.includes("<login>")) {
     if (!clID || !pw) throw new Error("Invalid login command");
-
     return { type: "login", id: clID, pw };
   }
 
