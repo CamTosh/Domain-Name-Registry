@@ -207,7 +207,22 @@ The following domains are reserved for registry operations:
 The HTTP API runs on port 3000 and provides the following endpoints:
 
 - `GET /health` - Service health check
-- `GET /metrics` - System metrics (sessions, rate limits)
+- `GET /leaderboard` - Registrar leaderboard
+- `GET /today-expiration` - List all the domains who will expire today
+- `POST /registrar/create` - Registrar creation
+
+
+### Creating a new registrar:
+
+> Be careful, the passowrd is saved in clear.
+
+```bash
+curl -X POST http://localhost:3000/registrar/create \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "myregistrar",
+    "password": "mypassword123"
+  }'
 
 ## Development
 
@@ -224,6 +239,7 @@ epp-server/
 │   │   └── whois.ts       # WHOIS protocol handler
 │   │
 │   ├── logic/             # Business logic
+│   ├── routes/            # API routes
 │   ├── utils/             # Utility functions
 │   ├── scripts/           # Scripts
 │   │   └── seed.ts        # Database seeding
