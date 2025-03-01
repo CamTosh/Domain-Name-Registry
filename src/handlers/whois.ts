@@ -2,7 +2,7 @@ import type { Socket } from "bun";
 import { queries } from "../database";
 import type { AppState } from "../types";
 
-export function handleWhoisRequest(socket: Socket, data: { domain: string }, state: AppState) {
+export function handleWhoisRequest(socket: Socket, data: Buffer, state: AppState) {
   const domain = data.toString().trim();
   const domainInfo = queries.getDomainInfo(state.db, domain);
 

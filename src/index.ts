@@ -12,9 +12,8 @@ initializeDatabase(db);
 
 export const state: AppState = {
   db: new Database("registry.sqlite", { create: true }),
-  sessions: new Map(),
   rateLimit: new Map(),
-  sessionManager: new SessionManager(new Map()),
+  sessionManager: new SessionManager(),
 };
 
 // EPP Server (Port 700)

@@ -68,10 +68,16 @@ function handleLogin(socket: Socket, command: LoginCommand, state: AppState) {
 }
 
 function handleCheck(socket: Socket, command: CheckCommand, state: AppState) {
+  if (!command.sessionId) {
+    socket.write(generateResponse("authError"));
+    return;
+  }
+
   const domain = queries.checkDomain(state.db, command.domain);
   socket.write(generateResponse("checkResponse", {
     domain: command.domain,
-    available: !domain
+    available: !domain,
+    sessionId: command.sessionId,
   }));
 }
 

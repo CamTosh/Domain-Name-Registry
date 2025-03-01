@@ -7,6 +7,7 @@ interface LoginSuccessData {
 interface CheckResponseData {
   domain: string;
   available: boolean;
+  sessionId: string;
 }
 
 interface CreateResponseData {
