@@ -35,7 +35,7 @@ export const queries = {
   */
   checkDomain: (db: Database, domain: string): Pick<Domain, 'name'> | undefined =>
     db.prepare("SELECT name FROM domains WHERE name = ?")
-      .get(domain) as Pick<Domain, 'name'> | undefined,
+      .get(domain.toLowerCase()) as Pick<Domain, 'name'> | undefined,
 
   createDomain: (db: Database, domain: string, registrar: string) => {
     const now = Date.now();
@@ -64,7 +64,7 @@ export const queries = {
 
   getDomainInfo: (db: Database, domain: string): Domain | undefined =>
     db.prepare("SELECT * FROM domains WHERE name = ?")
-      .get(domain) as Domain | undefined,
+      .get(domain.toLowerCase()) as Domain | undefined,
 
   checkRegistrar: (db: Database, id: string, password: string): Pick<Registrar, 'id'> | undefined =>
     db.prepare(
@@ -74,7 +74,7 @@ export const queries = {
   updateDomainStatus: (db: Database, domain: string, status: Domain['status']) =>
     db.prepare(
       "UPDATE domains SET status = ?, updated_at = ? WHERE name = ?"
-    ).run(status, Date.now(), domain),
+    ).run(status, Date.now(), domain.toLowerCase()),
 
   /*
    * Registrar

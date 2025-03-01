@@ -2,6 +2,7 @@ import type { Socket } from "bun";
 import { queries } from "../database";
 import type { AppState } from "../types";
 import { formatWhoisResponse } from "../logic/whois-formatter";
+import { isValidDomain } from "../utils/domains";
 
 const CRLF = "\r\n";
 
@@ -36,6 +37,11 @@ export function handleWhoisRequest(socket: Socket, data: Buffer, state: AppState
 }
 
 function handleDomainLookup(socket: Socket, domain: string, state: AppState) {
+  if (!isValidDomain(domain)) {
+    sendError(socket, `Invalid domain name format`);
+    return;
+  }
+
   const domainInfo = queries.getDomainInfo(state.db, domain);
 
   if (!domainInfo) {
