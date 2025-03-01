@@ -95,11 +95,21 @@
       <summary><h2 style="display: inline;">Rate Limiting & Penalties</h2></summary>
       <ul>
         <li>Each registrar has 1000 initial tokens</li>
-        <li>Limits: 1000 requests/hour, 100 requests/minute</li>
-        <li>After 3 violations:</li>
+        <li>Limits:</li>
+          <ul>
+          <li>5000 requests/hour</li>
+          <li>500 requests/minute (~8 requests/second)</li>
+        </ul>
+        <li>After 5 violations:</li>
         <ul>
-          <li>2-second delay added to requests</li>
-          <li>5 tokens deducted</li>
+          <li>1-second delay added to requests</li>
+          <li>2 tokens deducted</li>
+        </ul>
+          <li>Counters reset:</li>
+        <ul>
+          <li>Minute counter: Every 60 seconds</li>
+          <li>Hour counter: Every 60 minutes</li>
+          <li>Violation counter: Every hour</li>
         </ul>
       </ul>
     </details>

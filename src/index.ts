@@ -17,11 +17,11 @@ const state: AppState = {
   rateLimit: new Map(),
   sessionManager: new SessionManager(),
   usageManager: new UsageManager({
-    requestsPerHour: 1000,
-    requestsPerMinute: 100,
-    penaltyThreshold: 3,
-    penaltyDelay: 2000,
-    penaltyTokens: 5,
+    requestsPerHour: 5_000,
+    requestsPerMinute: 500,
+    penaltyThreshold: 5,
+    penaltyDelay: 1_000,
+    penaltyTokens: 2,
   }),
 };
 
