@@ -1,7 +1,7 @@
 import type { Socket } from "bun";
 import { queries } from "../database";
 import type { AppState } from "../types";
-import { formatWhoisResponse } from "../utils/whois-formatter";
+import { formatWhoisResponse } from "../logic/whois-formatter";
 
 const CRLF = "\r\n";
 

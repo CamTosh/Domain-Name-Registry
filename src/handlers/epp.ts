@@ -1,10 +1,10 @@
 import type { Socket } from "bun";
-import { parseXml } from "../utils/xml";
-import { generateResponse } from "../utils/epp-responses";
-import { checkRateLimit } from "../utils/rate-limit";
 import { logger } from "../utils/logger";
 import { queries } from "../database";
 import type { AppState, LoginCommand, CheckCommand, CreateCommand, InfoCommand } from "../types";
+import { generateResponse } from "../logic/epp-responses";
+import { checkRateLimit } from "../logic/rate-limit";
+import { parseXml } from "../logic/xml";
 
 export async function handleEppRequest(socket: Socket, data: Buffer, state: AppState) {
   const clientIP = socket.remoteAddress;

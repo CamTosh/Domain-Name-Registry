@@ -3,12 +3,11 @@ import { handleEppRequest } from "./handlers/epp";
 import { handleWhoisRequest } from "./handlers/whois";
 import { initializeDatabase } from "./database";
 import { logger } from "./utils/logger";
-import { SessionManager } from "./utils/session";
 import type { AppState } from "./types";
+import { SessionManager } from "./logic/session";
 
 const db = new Database("registry.sqlite", { create: true });
 initializeDatabase(db);
-
 
 export const state: AppState = {
   db: new Database("registry.sqlite", { create: true }),

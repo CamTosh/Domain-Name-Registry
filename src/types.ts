@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type { SessionManager } from "./utils/session";
+import type { SessionManager } from "./logic/session";
 
 export interface Greeting {
   svID: string;
