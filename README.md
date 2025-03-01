@@ -2,6 +2,10 @@
 
 A modern domain registry system implementing EPP (Extensible Provisioning Protocol) and WHOIS services for the .tsh TLD, built with Bun and 0 dependencies.
 
+Hosted instance:
+- `whois.nic.bullshit.video` (Example: `whois -h whois.nic.bullshit.video nic.tsh`)
+- `epp.nic.bullshit.video`
+
 ## Features
 
 - EPP Server (Port 700) for domain registration and management
