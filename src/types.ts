@@ -2,15 +2,6 @@ import type { Database } from "bun:sqlite";
 import type { SessionManager } from "./logic/session";
 import type { UsageManager } from "./logic/usage";
 
-export interface Greeting {
-  svID: string;
-  svDate: string;
-  versions: string[];
-  langs: string[];
-  objURIs: string[];
-  extURIs?: string[];
-}
-
 export interface BaseCommand {
   type: 'login' | 'check' | 'create' | 'info';
   sessionId?: string;

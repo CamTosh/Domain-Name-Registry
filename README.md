@@ -28,45 +28,15 @@ git clone https://github.com/CamTosh/Domain-Name-Registry
 cd Domain-Name-Registry
 ```
 
-2. Install dependencies:
-```bash
-bun install
-```
-
-3. Seed the database with initial data:
+2. Seed the database with initial data:
 ```bash
 bun run seed
 ```
 
-4. Start the server:
+3. Start the server:
 ```bash
 bun run start
 ```
-
-## Usage Control System
-
-The registry implements a sophisticated usage control system to manage registrar activity and prevent abuse.
-
-### Request Limits
-
-Each registrar is subject to the following limits:
-- 1000 requests per hour
-- 100 requests per minute
-
-### Penalty System
-
-The system implements a graduated penalty mechanism:
-
-1. **Soft Limits**
-   - First violations only result in request rejection
-   - Counters reset automatically:
-     - Minute counters: Every 60 seconds
-     - Hour counters: Every 60 minutes
-
-2. **Hard Penalties**
-   After 3 limit violations within an hour:
-   - Request Processing Delay: 2 second delay added
-   - Token Consumption: 5 tokens deducted from registrar's credit
 
 ## Domain Expiry System
 
@@ -193,15 +163,6 @@ The system comes with two test registrar accounts:
 
 Each test account comes with 1000 initial credits.
 
-## Reserved Domains
-
-The following domains are reserved for registry operations:
-
-- `nic.tsh` - Registry information
-- `whois.tsh` - WHOIS service
-- `rdds.tsh` - Registration Data Directory Services
-- `epp.tsh` - EPP service
-
 ## API Endpoints
 
 The HTTP API runs on port 3000 and provides the following endpoints:
@@ -209,8 +170,8 @@ The HTTP API runs on port 3000 and provides the following endpoints:
 - `GET /health` - Service health check
 - `GET /leaderboard` - Registrar leaderboard
 - `GET /today-expiration` - List all the domains who will expire today
+- `GET /analytics` - Get registrar or domain analytics for the past day
 - `POST /registrar/create` - Registrar creation
-
 
 ### Creating a new registrar:
 
@@ -230,6 +191,7 @@ curl -X POST http://localhost:3000/registrar/create \
 ```
 epp-server/
 ├── src/
+│   ├── cron/               # Cron stuff
 │   ├── handlers/           # Request handlers
 │   │   ├── epp.ts         # EPP protocol handler
 │   │   ├── greeting.ts    # EPP greeting handler
@@ -240,6 +202,7 @@ epp-server/
 │   ├── utils/             # Utility functions
 │   ├── scripts/           # Scripts
 │   │   └── seed.ts        # Database seeding
+│   │   └── test.ts        # Simulate a snap session
 │   │
 │   ├── database.ts        # Database operations
 │   ├── types.ts           # TypeScript type definitions

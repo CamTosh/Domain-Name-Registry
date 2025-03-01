@@ -9,6 +9,7 @@ import { UsageManager } from "./logic/usage";
 import { handleRegistrarCreate } from "./routes/registrar";
 import { handleLeaderboard } from "./routes/leaderboard";
 import { handleAnalytics } from "./routes/analytics";
+import { handleHello } from "./handlers/greeting";
 
 const db = new Database("registry.sqlite", { create: true });
 initializeDatabase(db);
@@ -31,6 +32,7 @@ const servers = {
     hostname: "0.0.0.0",
     port: 700,
     socket: {
+      open: (socket) => handleHello(socket),
       data: (socket, data) => handleEppRequest(socket, data, state),
       error: (_, error) => logger.error("EPP error:", error),
     },
