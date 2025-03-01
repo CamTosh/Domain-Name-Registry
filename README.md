@@ -223,12 +223,9 @@ curl -X POST http://localhost:3000/registrar/create \
     "id": "myregistrar",
     "password": "mypassword123"
   }'
+```
 
 ## Development
-
-### Project Structure
-
-## Project Structure
 
 ```
 epp-server/
