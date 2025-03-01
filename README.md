@@ -24,8 +24,8 @@ Hosted instance:
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/tsh-registry.git
-cd tsh-registry
+git clone https://github.com/CamTosh/Domain-Name-Registry
+cd Domain-Name-Registry
 ```
 
 2. Install dependencies:

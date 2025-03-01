@@ -48,6 +48,10 @@ const servers = {
     port: 3000,
     routes: {
       "/health": new Response("OK"),
+      "/": async () => {
+        const htmlFile = await Bun.file("./src/index.html").text();
+        return new Response(htmlFile, { headers: { "Content-Type": "text/html" } });
+      },
       "/leaderboard": (req) => handleLeaderboard(req, state),
       "/registrar/create": (req) => handleRegistrarCreate(req, state),
       "/today-expiration": () => {

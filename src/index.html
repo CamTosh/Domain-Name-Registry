@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>.TSH Registry - Domain Drop Catching Game</title>
+</head>
+<body>
+  <h1>.tsh Registry - Domain Drop Catching Game</h1>
+
+  <section>
+    <h2>What is this?</h2>
+    <p>
+      TSH Registry is a game where participants compete to catch expiring domain names using <a href="https://en.wikipedia.org/wiki/Extensible_Provisioning_Protocol#EPP_Objects_RFCs" target="_blank" style="text-decoration: underline;">EPP (Extensible Provisioning Protocol)</a>.
+      The goal is to develop the most efficient algorithm for domain drop catching and collect the most valuable domains.
+    </p>
+  </section>
+  <section>
+    <h2>What is Drop Catching?</h2>
+    <p>Drop catching is the practice of registering a domain name the very moment it expires. In the real world, this is a competitive field where registrars compete to acquire valuable domains as they become available.</p>
+    <p>This is a technically challenging endeavor because:</p>
+    <ul>
+      <li>Timing is critical - you must submit registration requests at the exact moment domains become available</li>
+      <li>Multiple registrars are competing for the same domains simultaneously</li>
+      <li>Network latency can significantly impact success rates</li>
+      <li>Rate limits must be carefully managed to avoid penalties</li>
+      <li>The random release timing within the drop window adds complexity to catching strategies</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>How Does It Work?</h2>
+    <ul>
+      <li>Every day at 15:00 France/Paris, domains scheduled for expiration are released</li>
+      <li>The release window lasts 42 minutes (15:00 - 15:42)</li>
+      <li>Domains are released randomly during this window</li>
+      <li>Each domain has a rank value determining its worth</li>
+      <li>Players must use EPP commands to register domains</li>
+      <li>WHOIS can be used to check domain status</li>
+    </ul>
+
+    <h3>Server Information</h3>
+    <ul>
+      <li>HTTP Server: <code>GET https://nic.bullshit.video/today-expiration</code> (all the domains who expire today)</li>
+      <li>EPP Server: <code>epp.nic.bullshit.video</code> (Port 700)</li>
+      <li>WHOIS Server: <code>whois.nic.bullshit.video (Port 43)</code>
+        <ul>
+          <li>Example usage: <code>whois -h whois.nic.bullshit.video nic.tsh</code></li>
+        </ul>
+      </li>
+    </ul>
+  </section>
+
+  <section style="margin-top: 5rem; margin-bottom: 5rem;">
+    <h2 style="display: inline;">Current Leaderboard</h2>
+    <p>Players are ranked based on:</p>
+    <ul>
+      <li>Daily score: Total value of domains caught in the current day</li>
+      <li>Weekly score: Cumulative value of domains caught in the current week</li>
+      <li>Scores are updated after each expiration session</li>
+    </ul>
+    <table id="leaderboard">
+      <tr>
+        <th>Registrar</th>
+        <th>Today's Score</th>
+        <th>Weekly Score</th>
+      </tr>
+    </table>
+  </section>
+
+
+  <details>
+    <summary><h2 style="display: inline;">Create New Registrar Account</h2></summary>
+    <form id="registrarForm">
+      <div>
+        <label for="registrarId">Registrar ID:</label>
+        <input type="text" id="registrarId" required>
+      </div>
+      <div>
+        <label for="password">Password:</label>
+        <input type="password" id="password" required>
+      </div>
+      <button type="submit">Create Registrar</button>
+    </form>
+  </details>
+
+  <section>
+    <h2>Source Code</h2>
+    <p>The complete source code is available on <a href="https://github.com/CamTosh/Domain-Name-Registry">GitHub</a>. Feel free to read, contribute, or report bugs!</p>
+  </section>
+
+
+  <h2>Documentation:</h2>
+  <section>
+    <details>
+      <summary><h2 style="display: inline;">Rate Limiting & Penalties</h2></summary>
+      <ul>
+        <li>Each registrar has 1000 initial tokens</li>
+        <li>Limits: 1000 requests/hour, 100 requests/minute</li>
+        <li>After 3 violations:</li>
+        <ul>
+          <li>2-second delay added to requests</li>
+          <li>5 tokens deducted</li>
+        </ul>
+      </ul>
+    </details>
+
+    <details>
+      <summary><h2 style="display: inline;">Valid Domain Names</h2></summary>
+
+      <div>
+        <p>For the .tsh TLD, domain names must follow these strict rules:</p>
+
+        <h3>Basic Requirements</h3>
+        <ul>
+          <li>Must end with .tsh</li>
+          <li>Must be all lowercase</li>
+          <li>Length must be between 2 and 63 characters (excluding .tsh)</li>
+        </ul>
+
+        <h3>Allowed Characters</h3>
+        <ul>
+          <li>Lowercase letters (a-z)</li>
+          <li>Numbers (0-9)</li>
+          <li>Hyphens (-) with restrictions</li>
+        </ul>
+
+        <h3>Structure Rules</h3>
+        <ul>
+          <li>Cannot start with a hyphen</li>
+          <li>Cannot end with a hyphen</li>
+          <li>Cannot contain consecutive hyphens (--)</li>
+          <li>Must start and end with a letter or number</li>
+        </ul>
+
+        <h3>Not Allowed</h3>
+        <ul>
+          <li>Uppercase letters (A-Z)</li>
+          <li>Special characters (!@#$%^&*, etc.)</li>
+          <li>Spaces</li>
+          <li>Underscores (_)</li>
+          <li>Accented characters (é, ñ, etc.)</li>
+          <li>Slashes or paths</li>
+        </ul>
+
+        <h3>Valid Examples</h3>
+        <ul>
+          <li>example.tsh</li>
+          <li>test123.tsh</li>
+          <li>my-domain.tsh</li>
+          <li>123.tsh</li>
+          <li>ab.tsh</li>
+        </ul>
+
+        <h3>Invalid Examples</h3>
+        <ul>
+          <li>a.tsh (too short)</li>
+          <li>-example.tsh (starts with hyphen)</li>
+          <li>example-.tsh (ends with hyphen)</li>
+          <li>ex--ample.tsh (consecutive hyphens)</li>
+          <li>example.com (wrong TLD)</li>
+          <li>EXAMPLE.tsh (uppercase)</li>
+          <li>héllo.tsh (accented characters)</li>
+          <li>hello_world.tsh (contains underscore)</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+</body>
+<script>
+  // Fetch and display leaderboard
+  async function fetchLeaderboard() {
+    try {
+      const response = await fetch('/leaderboard');
+      const data = await response.json();
+      const table = document.getElementById('leaderboard');
+
+      data.forEach(entry => {
+        const row = table.insertRow();
+        row.insertCell(0).textContent = entry.registrar_id;
+        row.insertCell(1).textContent = entry.today_count;
+        row.insertCell(2).textContent = entry.week_count;
+      });
+    } catch (error) {
+      console.error('Error fetching leaderboard:', error);
+    }
+  }
+
+  // Handle registrar creation
+  document.getElementById('registrarForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch('/registrar/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          id: document.getElementById('registrarId').value,
+          password: document.getElementById('password').value
+        })
+      });
+
+      if (response.ok) {
+        alert('Registrar created successfully!');
+        document.getElementById('registrarForm').reset();
+      } else {
+        alert('Failed to create registrar');
+      }
+    } catch (error) {
+      console.error('Error creating registrar:', error);
+      alert('Error creating registrar');
+    }
+  });
+
+  // Load leaderboard on page load
+  fetchLeaderboard();
+</script>
+</html>
