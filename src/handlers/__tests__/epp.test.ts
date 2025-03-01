@@ -1,6 +1,6 @@
 import { expect, test, describe, beforeEach } from "bun:test";
 import { handleEppRequest } from "../../../src/handlers/epp";
-import type { AppState } from "../../../src/types";
+import type { AppState, Domain } from "../../../src/types";
 import { initializeDatabase } from "../../database";
 import { Database } from "bun:sqlite";
 import { MockSocket } from "../../utils/test";
@@ -26,7 +26,7 @@ describe("EPP Handler", () => {
   });
 
   describe("Login Command", () => {
-    test.only("should handle successful login", async () => {
+    test("should handle successful login", async () => {
       const loginXml = `
           <epp>
             <command>
@@ -111,25 +111,100 @@ describe("EPP Handler", () => {
     describe("Create Command", () => {
       test("should reject creating existing domain", async () => {
         state.db.prepare(`
-          INSERT INTO domains (name, status, registrar, created_at)
-          VALUES ('existing.tsh', 'active', 'test1', ?)
-        `).run(Date.now());
+            INSERT INTO domains (name, status, registrar, created_at)
+            VALUES ('existing.tsh', 'active', 'test1', ?)
+          `).run(Date.now());
 
         const createXml = `
-          <epp>
-            <command>
-              <create>
-                <domain:name>existing.tsh</domain:name>
-                <clID>test1</clID>
-              </create>
-              <clTRID>${sessionId}</clTRID>
-            </command>
-          </epp>
-        `;
+            <epp>
+              <command>
+                <create>
+                  <domain:name>existing.tsh</domain:name>
+                  <clID>test1</clID>
+                </create>
+                <clTRID>${sessionId}</clTRID>
+              </command>
+            </epp>
+          `;
 
         await handleEppRequest(socket as any, Buffer.from(createXml), state);
-        expect(socket.getLastResponse()).toContain("Object exists");
+        expect(socket.getLastResponse()).toContain("Domain name is not available");
+
+        // Also verify the response code
+        expect(socket.getLastResponse()).toContain("<result code=\"2302\">");
       });
+
+      test("should allow transferring inactive domain", async () => {
+        // Create an inactive domain
+        state.db.prepare(`
+            INSERT INTO domains (name, status, registrar, created_at)
+            VALUES ('inactive.tsh', 'inactive', 'test2', ?)
+          `).run(Date.now());
+
+        const createXml = `
+            <epp>
+              <command>
+                <create>
+                  <domain:name>inactive.tsh</domain:name>
+                  <clID>test1</clID>
+                </create>
+                <clTRID>${sessionId}</clTRID>
+              </command>
+            </epp>
+          `;
+
+        await handleEppRequest(socket as any, Buffer.from(createXml), state);
+
+        // Check response
+        expect(socket.getLastResponse()).toContain("Command completed successfully");
+
+        // Verify domain was transferred
+        const domain = state.db.prepare(
+          "SELECT * FROM domains WHERE name = ?"
+        ).get("inactive.tsh") as Domain;
+
+        expect(domain.status).toBe("active");
+        expect(domain.registrar).toBe("test1");
+        expect(domain.updated_at).toBeTruthy();
+      });
+
+      test("should update expiry date when transferring domain", async () => {
+        const oldDate = Date.now() - (24 * 60 * 60 * 1000); // yesterday
+
+        // Create an inactive domain with old expiry
+        state.db.prepare(`
+            INSERT INTO domains (
+              name,
+              status,
+              registrar,
+              created_at,
+              expiry_date
+            ) VALUES (?, 'inactive', 'test2', ?, ?)
+          `).run("inactive.tsh", oldDate, oldDate);
+
+        const createXml = `
+            <epp>
+              <command>
+                <create>
+                  <domain:name>inactive.tsh</domain:name>
+                  <clID>test1</clID>
+                </create>
+                <clTRID>${sessionId}</clTRID>
+              </command>
+            </epp>
+          `;
+
+        await handleEppRequest(socket as any, Buffer.from(createXml), state);
+
+        // Verify new expiry date
+        const domain = state.db.prepare(
+          "SELECT * FROM domains WHERE name = ?"
+        ).get("inactive.tsh") as Domain;
+
+        expect(domain.expiry_date).toBeGreaterThan(Date.now());
+        expect(domain.expiry_date).toBeLessThan(Date.now() + (11 * 24 * 60 * 60 * 1000)); // Less than 11 days
+      });
+
     });
 
     describe("Info Command", () => {

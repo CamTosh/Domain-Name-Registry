@@ -118,20 +118,23 @@ function handleCreate(socket: Socket, command: CreateCommand, state: AppState) {
 
     const domain = command.domain.toLowerCase();
 
-    // Validate domain name
     if (!isValidDomain(domain)) {
       socket.write(generateResponse("invalidDomain"));
       return;
     }
 
-    // Check if domain is available
-    if (!queries.isDomainAvailable(state.db, domain)) {
+    const availability = queries.isDomainAvailable(state.db, domain);
+    if (!availability.available) {
       socket.write(generateResponse("domainUnavailable"));
       return;
     }
 
-    // Create the domain
-    queries.createDomain(state.db, domain, command.registrar);
+    if (availability.status === 'inactive') {
+      queries.transferDomain(state.db, domain, command.registrar);
+    } else {
+      queries.createDomain(state.db, domain, command.registrar);
+    }
+
     const domainInfo = queries.getDomainInfo(state.db, domain);
 
     if (!domainInfo) {

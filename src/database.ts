@@ -51,15 +51,33 @@ export const queries = {
       ) VALUES (?, ?, ?, 'active', ?)
     `).run(domain.toLowerCase(), registrar, now, expiryDate);
   },
-  isDomainAvailable: (db: Database, domain: string): boolean => {
+
+  isDomainAvailable: (db: Database, domain: string): { available: boolean, status?: string } => {
     const result = db.prepare(`
       SELECT status
       FROM domains
       WHERE name = ?
-      AND status = 'active'
-    `).get(domain.toLowerCase());
+    `).get(domain.toLowerCase()) as { status: string } | undefined;
 
-    return !result;
+    return {
+      available: !result || result.status === 'inactive',
+      status: result?.status
+    };
+  },
+
+  transferDomain: (db: Database, domain: string, registrar: string) => {
+    const now = Date.now();
+    const expiryDate = calculateExpiryDate();
+
+    return db.prepare(`
+      UPDATE domains
+      SET registrar = ?,
+          status = 'active',
+          updated_at = ?,
+          expiry_date = ?
+      WHERE name = ?
+      AND status = 'inactive'
+    `).run(registrar, now, expiryDate, domain.toLowerCase());
   },
 
   getDomainInfo: (db: Database, domain: string): Domain | undefined =>
