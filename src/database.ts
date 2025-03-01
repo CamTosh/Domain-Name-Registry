@@ -224,7 +224,7 @@ export const queries = {
 
   getRegistrarTimeline: (db: Database, registrarId: string, startTime: number) => {
     return db.prepare(`
-      SELECT domain, action, timestamp, success, details FROM registrar_actions
+      SELECT domain, action, timestamp, success FROM registrar_actions
       WHERE registrar_id = ?
       AND timestamp >= ?
       ORDER BY timestamp ASC
@@ -233,13 +233,12 @@ export const queries = {
       action: string;
       timestamp: number;
       success: boolean;
-      details: string | null;
     }[];
   },
 
   getDomainHistory: (db: Database, domain: string) => {
     return db.prepare(`
-      SELECT registrar_id, action, timestamp, success, details FROM registrar_actions
+      SELECT registrar_id, action, timestamp, success FROM registrar_actions
       WHERE domain = ?
       ORDER BY timestamp ASC
     `).all(domain) as {
@@ -247,7 +246,6 @@ export const queries = {
       action: string;
       timestamp: number;
       success: boolean;
-      details: string | null;
     }[];
   }
 };

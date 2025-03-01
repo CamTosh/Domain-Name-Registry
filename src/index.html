@@ -115,6 +115,60 @@
     </details>
 
     <details>
+      <summary><h2 style="display: inline;">Analytics API</h2></summary>
+
+      <p>The analytics API provides insights into domain and registrar activities.</p>
+
+      <h3>Endpoints</h3>
+
+      <h4>1. Domain History</h4>
+      <pre><code>GET /analytics?domain=example.tsh</code></pre>
+      <p>Returns the complete history of actions performed on a specific domain, including:</p>
+      <ul>
+        <li>Registrar ID who performed the action</li>
+        <li>Type of action</li>
+        <li>Timestamp</li>
+        <li>Success status</li>
+      </ul>
+
+      <h4>2. Registrar Statistics</h4>
+      <pre><code>GET /analytics?registrar=test1</code></pre>
+      <p>Returns analytics for a specific registrar, including:</p>
+      <ul>
+        <li>Action statistics:
+          <ul>
+            <li>Total count per action type</li>
+            <li>Success rate</li>
+            <li>Number of unique domains</li>
+          </ul>
+        </li>
+        <li>Timeline of all actions</li>
+      </ul>
+
+      <h3>Example Response</h3>
+      <pre><code>{
+      "stats": [
+        {
+          "action": "register",
+          "count": 150,
+          "successful": 42,
+          "unique_domains": 35
+        }
+      ],
+      "timeline": [
+        {
+          "domain": "example.tsh",
+          "action": "register",
+          "timestamp": 1234567890,
+          "success": true
+        }
+      ]
+    }</code></pre>
+
+      <p>Note: All timestamps are in Unix milliseconds format.</p>
+    </details>
+
+    <details>
       <summary><h2 style="display: inline;">Valid Domain Names</h2></summary>
 
       <div>

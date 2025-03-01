@@ -8,6 +8,7 @@ import { SessionManager } from "./logic/session";
 import { UsageManager } from "./logic/usage";
 import { handleRegistrarCreate } from "./routes/registrar";
 import { handleLeaderboard } from "./routes/leaderboard";
+import { handleAnalytics } from "./routes/analytics";
 
 const db = new Database("registry.sqlite", { create: true });
 initializeDatabase(db);
@@ -52,8 +53,12 @@ const servers = {
         const htmlFile = await Bun.file("./src/index.html").text();
         return new Response(htmlFile, { headers: { "Content-Type": "text/html" } });
       },
+
       "/leaderboard": (req) => handleLeaderboard(req, state),
+      "/analytics": (req) => handleAnalytics(req, state),
+
       "/registrar/create": (req) => handleRegistrarCreate(req, state),
+
       "/today-expiration": () => {
         const domains = queries.todayExpiration(state.db);
         const names = domains.map((domain) => domain.name);
