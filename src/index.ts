@@ -9,49 +9,58 @@ import { SessionManager } from "./logic/session";
 const db = new Database("registry.sqlite", { create: true });
 initializeDatabase(db);
 
-export const state: AppState = {
-  db: new Database("registry.sqlite", { create: true }),
+const state: AppState = {
+  db,
   rateLimit: new Map(),
   sessionManager: new SessionManager(),
 };
 
-// EPP Server (Port 700)
-const eppServer = Bun.listen({
-  hostname: "0.0.0.0",
-  port: 700,
-  socket: {
-    data: (socket, data) => handleEppRequest(socket, data, state),
-  },
-});
+const servers = {
+  epp: Bun.listen({
+    hostname: "0.0.0.0",
+    port: 700,
+    socket: {
+      data: (socket, data) => handleEppRequest(socket, data, state),
+      error: (_, error) => logger.error("EPP error:", error),
+    },
+  }),
 
-// WHOIS Server (Port 43)
-const whoisServer = Bun.listen({
-  hostname: "0.0.0.0",
-  port: 43,
-  socket: {
-    data: (socket, data) => handleWhoisRequest(socket, data, state),
-  },
-});
+  whois: Bun.listen({
+    hostname: "0.0.0.0",
+    port: 43,
+    socket: {
+      data: (socket, data) => handleWhoisRequest(socket, data, state),
+      error: (_, error) => logger.error("WHOIS error:", error),
+    },
+  }),
 
-// API Server (Port 3000)
-Bun.serve({
-  port: 3000,
-  async fetch(req) {
-    const url = new URL(req.url);
+  api: Bun.serve({
+    port: 3000,
+    fetch: (req) => {
+      const url = new URL(req.url);
 
-    switch (url.pathname) {
-      case "/health":
-        return new Response("OK");
-      case "/metrics":
-        return new Response(JSON.stringify({
-          sessions: state.sessionManager.size,
-          rateLimits: state.rateLimit.size,
-        }));
-      default:
-        return new Response("Not Found", { status: 404 });
-    }
-  },
-});
+      return url.pathname === "/health"
+        ? new Response("OK")
+        : url.pathname === "/metrics"
+          ? new Response(JSON.stringify({
+            sessions: state.sessionManager.size,
+            rateLimits: state.rateLimit.size,
+          }))
+          : new Response("Not Found", { status: 404 });
+    },
+  }),
+};
 
-logger.info("All servers started");
+for (const [name, server] of Object.entries(servers)) {
+  logger.info(`${name.toUpperCase()} server listening on ${server.hostname}:${server.port}`);
+}
+
+// Start session cleanup and log status
 state.sessionManager.startCleanup();
+logger.info(".TSH Registry started successfully");
+
+process.on("SIGTERM", () => {
+  state.sessionManager.stopCleanup();
+  state.db.close();
+  process.exit();
+});
