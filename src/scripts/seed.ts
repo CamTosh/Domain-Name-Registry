@@ -140,8 +140,8 @@ async function seed() {
   console.log("\nCreating reserved domains...");
   for (const domain of RESERVED_DOMAINS) {
     try {
-
-      queries.createDomain(db, domain, 'registry');
+      const tenYears = Date.now() + (10 * 365 * 24 * 60 * 60 * 1000);
+      queries.createDomain(db, domain, 'registry', tenYears);
       console.log(`✓ Reserved: ${domain}`);
     } catch (error) {
       console.error(`✗ Failed to reserve ${domain}:`, error);
