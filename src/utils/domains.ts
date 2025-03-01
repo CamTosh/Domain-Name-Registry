@@ -1,7 +1,5 @@
 
 export const VALID_DOMAIN_REGEX = /^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]\.tsh$/;
-export const MAX_REGISTRATION_DAYS = 10;
-export const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 export function isValidDomain(domain: string): boolean {
   // Convert to lowercase for consistency
@@ -22,10 +20,9 @@ export function isValidDomain(domain: string): boolean {
   return VALID_DOMAIN_REGEX.test(domain);
 }
 
-export function calculateExpiryDate(registrationDays: number = MAX_REGISTRATION_DAYS): number {
-  if (registrationDays <= 0 || registrationDays > MAX_REGISTRATION_DAYS) {
-    registrationDays = MAX_REGISTRATION_DAYS;
-  }
+export function calculateExpiryDate(): number {
+  const date = new Date();
+  date.setDate(date.getDate() + 10);
 
-  return Date.now() + (registrationDays * MS_PER_DAY);
+  return date.getTime();
 }

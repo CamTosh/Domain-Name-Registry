@@ -74,7 +74,7 @@ describe("EPP Handler", () => {
           <epp>
             <command>
               <check>
-                <domain:name>available.com</domain:name>
+                <domain:name>available.tsh</domain:name>
               </check>
               <clTRID>${sessionId}</clTRID>
             </command>
@@ -88,14 +88,14 @@ describe("EPP Handler", () => {
       test("should report unavailable domain", async () => {
         state.db.prepare(`
           INSERT INTO domains (name, status, registrar, created_at)
-          VALUES ('taken.com', 'active', 'test1', ?)
+          VALUES ('taken.tsh', 'active', 'test1', ?)
         `).run(Date.now());
 
         const checkXml = `
           <epp>
             <command>
               <check>
-                <domain:name>taken.com</domain:name>
+                <domain:name>taken.tsh</domain:name>
               </check>
               <clTRID>${sessionId}</clTRID>
             </command>
@@ -112,14 +112,14 @@ describe("EPP Handler", () => {
       test("should reject creating existing domain", async () => {
         state.db.prepare(`
           INSERT INTO domains (name, status, registrar, created_at)
-          VALUES ('existing.com', 'active', 'test1', ?)
+          VALUES ('existing.tsh', 'active', 'test1', ?)
         `).run(Date.now());
 
         const createXml = `
           <epp>
             <command>
               <create>
-                <domain:name>existing.com</domain:name>
+                <domain:name>existing.tsh</domain:name>
                 <clID>test1</clID>
               </create>
               <clTRID>${sessionId}</clTRID>
@@ -138,14 +138,14 @@ describe("EPP Handler", () => {
         // Create a domain first
         state.db.prepare(`
           INSERT INTO domains (name, status, registrar, created_at)
-          VALUES ('info-test.com', 'active', 'test1', ?)
+          VALUES ('info-test.tsh', 'active', 'test1', ?)
         `).run(timestamp);
 
         const infoXml = `
           <epp>
             <command>
               <info>
-                <domain:name>info-test.com</domain:name>
+                <domain:name>info-test.tsh</domain:name>
               </info>
               <clTRID>${sessionId}</clTRID>
             </command>
@@ -155,7 +155,7 @@ describe("EPP Handler", () => {
         await handleEppRequest(socket as any, Buffer.from(infoXml), state);
         const response = socket.getLastResponse();
         expect(response).toContain("<result code=\"1000\">");
-        expect(response).toContain("<domain:name>info-test.com</domain:name>");
+        expect(response).toContain("<domain:name>info-test.tsh</domain:name>");
         expect(response).toContain("<domain:status s=\"active\"/>");
       });
 
@@ -164,7 +164,7 @@ describe("EPP Handler", () => {
           <epp>
             <command>
               <info>
-                <domain:name>doesnotexist.com</domain:name>
+                <domain:name>doesnotexist.tsh</domain:name>
               </info>
               <clTRID>${sessionId}</clTRID>
             </command>
@@ -183,7 +183,7 @@ describe("EPP Handler", () => {
           <epp>
             <command>
               <check>
-                <domain:name>test.com</domain:name>
+                <domain:name>test.tsh</domain:name>
               </check>
             </command>
           </epp>
@@ -215,7 +215,7 @@ describe("EPP Handler", () => {
           <epp>
             <command>
               <unknown>
-                <something>test.com</something>
+                <something>test.tsh</something>
               </unknown>
             </command>
           </epp>

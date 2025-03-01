@@ -28,7 +28,7 @@ describe("WHOIS Handler", () => {
         expiry_date
       ) VALUES (?, ?, ?, ?, ?, ?)
     `, [
-      'test.com',
+      'test.tsh',
       'active',
       'test1',
       now,
@@ -47,11 +47,11 @@ describe("WHOIS Handler", () => {
   });
 
   test("should return domain information", () => {
-    handleWhoisRequest(socket as any, Buffer.from("test.com"), state);
+    handleWhoisRequest(socket as any, Buffer.from("test.tsh"), state);
 
     const response = socket.getResponse();
     expect(response).toContain("Domain Information:");
-    expect(response).toContain("Domain Name: test.com");
+    expect(response).toContain("Domain Name: test.tsh");
     expect(response).toContain("Domain Status: active");
     expect(response).toContain("Created Date:");
     expect(response).toContain("Expiration Date:");
@@ -63,11 +63,11 @@ describe("WHOIS Handler", () => {
     const response = socket.getResponse();
     expect(response).toContain("Registrar Information:");
     expect(response).toContain("Registrar ID: test1");
-    expect(response).toContain("test.com (active)"); // Should show the domain we created
+    expect(response).toContain("test.tsh (active)"); // Should show the domain we created
   });
 
   test("should handle non-existent domain", () => {
-    handleWhoisRequest(socket as any, Buffer.from("nonexistent.com"), state);
+    handleWhoisRequest(socket as any, Buffer.from("nonexistent.tsh"), state);
 
     const response = socket.getResponse();
     expect(response).toContain("ERROR: No match for domain");
