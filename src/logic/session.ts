@@ -55,22 +55,22 @@ export class SessionManager {
     return sessionId;
   }
 
-  validateSession(sessionId: string): boolean {
+  validateSession(sessionId: string): Session | null {
     const session = this.#sessions.get(sessionId);
 
     if (!session || !session.isActive) {
-      return false;
+      return null;
     }
 
     const now = Date.now();
     if (now - session.lastActivity > this.#config.timeout) {
       this.closeSession(sessionId);
-      return false;
+      return null;
     }
 
     session.lastActivity = now;
     this.#sessions.set(sessionId, session);
-    return true;
+    return session;
   }
 
   closeSession(sessionId: string): void {

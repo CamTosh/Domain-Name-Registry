@@ -1,5 +1,6 @@
 import type { Database } from "bun:sqlite";
 import type { SessionManager } from "./logic/session";
+import type { UsageManager } from "./logic/usage";
 
 export interface Greeting {
   svID: string;
@@ -70,4 +71,5 @@ export interface AppState {
   db: Database;
   rateLimit: Map<string, RateLimit>;
   sessionManager: SessionManager;
+  usageManager: UsageManager;
 }

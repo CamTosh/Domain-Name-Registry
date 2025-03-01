@@ -5,6 +5,7 @@ import { initializeDatabase } from "./database";
 import { logger } from "./utils/logger";
 import type { AppState } from "./types";
 import { SessionManager } from "./logic/session";
+import { UsageManager } from "./logic/usage";
 
 const db = new Database("registry.sqlite", { create: true });
 initializeDatabase(db);
@@ -13,6 +14,13 @@ const state: AppState = {
   db,
   rateLimit: new Map(),
   sessionManager: new SessionManager(),
+  usageManager: new UsageManager({
+    requestsPerHour: 1000,
+    requestsPerMinute: 100,
+    penaltyThreshold: 3,
+    penaltyDelay: 2000,
+    penaltyTokens: 5,
+  }),
 };
 
 const servers = {

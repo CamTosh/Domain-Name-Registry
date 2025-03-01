@@ -8,7 +8,6 @@ import { parseXml } from "../logic/xml";
 
 export async function handleEppRequest(socket: Socket, data: Buffer, state: AppState) {
   const clientIP = socket.remoteAddress;
-
   if (!checkRateLimit(clientIP, state.rateLimit)) {
     socket.write(generateResponse("rateLimitExceeded"));
     return;
@@ -18,12 +17,40 @@ export async function handleEppRequest(socket: Socket, data: Buffer, state: AppS
     const request = data.toString();
     const command = parseXml(request);
 
-    // Skip session validation for login commands
-    if (command.type !== "login") {
-      if (!command.sessionId || !state.sessionManager.validateSession(command.sessionId)) {
+    // Handle session and get registrar ID
+    let registrarId: string | undefined;
+
+    if (command.type === "login") {
+      registrarId = command.id;
+    } else {
+      // For non-login commands, validate session and get registrar
+      if (!command.sessionId) {
         socket.write(generateResponse("authError"));
         return;
       }
+
+      const session = state.sessionManager.validateSession(command.sessionId);
+      if (!session) {
+        socket.write(generateResponse("authError"));
+        return;
+      }
+      registrarId = session.registrar;
+    }
+
+    // Check usage limits for the registrar
+    const usage = await state.usageManager.checkUsage(registrarId);
+    if (!usage.allowed) {
+      socket.write(generateResponse("usageLimitExceeded"));
+      return;
+    }
+
+    // Apply penalties if any
+    if (usage.delay > 0) {
+      await Bun.sleep(usage.delay);
+    }
+
+    if (usage.penaltyTokens > 0) {
+      queries.updateRegistrarCredits(state.db, registrarId, -usage.penaltyTokens);
     }
 
     switch (command.type) {

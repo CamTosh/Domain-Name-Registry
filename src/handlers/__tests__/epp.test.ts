@@ -5,6 +5,7 @@ import { initializeDatabase } from "../../database";
 import { Database } from "bun:sqlite";
 import { MockSocket } from "../../utils/test";
 import { SessionManager } from "../../logic/session";
+import { UsageManager } from "../../logic/usage";
 
 describe("EPP Handler", () => {
   let state: AppState;
@@ -20,6 +21,7 @@ describe("EPP Handler", () => {
       db,
       rateLimit: new Map(),
       sessionManager: new SessionManager(),
+      usageManager: new UsageManager(),
     };
   });
 

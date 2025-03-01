@@ -5,6 +5,7 @@ import { initializeDatabase } from "../../database";
 import type { AppState } from "../../types";
 import { MockSocket } from "../../utils/test";
 import { SessionManager } from "../../logic/session";
+import { UsageManager } from "../../logic/usage";
 
 describe("WHOIS Handler", () => {
   let state: AppState;
@@ -39,6 +40,7 @@ describe("WHOIS Handler", () => {
       db,
       rateLimit: new Map(),
       sessionManager: new SessionManager(),
+      usageManager: new UsageManager(),
     };
 
     socket = new MockSocket();

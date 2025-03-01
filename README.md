@@ -39,6 +39,31 @@ bun run seed
 bun run start
 ```
 
+## Usage Control System
+
+The registry implements a sophisticated usage control system to manage registrar activity and prevent abuse.
+
+### Request Limits
+
+Each registrar is subject to the following limits:
+- 1000 requests per hour
+- 100 requests per minute
+
+### Penalty System
+
+The system implements a graduated penalty mechanism:
+
+1. **Soft Limits**
+   - First violations only result in request rejection
+   - Counters reset automatically:
+     - Minute counters: Every 60 seconds
+     - Hour counters: Every 60 minutes
+
+2. **Hard Penalties**
+   After 3 limit violations within an hour:
+   - Request Processing Delay: 2 second delay added
+   - Token Consumption: 5 tokens deducted from registrar's credit
+
 ## Using WHOIS
 
 The WHOIS service runs on port 43 and supports several query types:

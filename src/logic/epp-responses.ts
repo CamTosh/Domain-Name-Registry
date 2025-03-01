@@ -32,6 +32,7 @@ type ResponseTypes = {
   rateLimitExceeded: never;
   systemError: never;
   unknownCommand: never;
+  usageLimitExceeded: never;
 }
 
 const addTransactionId = (sessionId?: string) => `
@@ -168,6 +169,16 @@ const responses = {
     </result>
   </response>
 </epp>`,
+
+  usageLimitExceeded: () => `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<epp xmlns="urn:ietf:params:xml:ns:epp-1.0">
+  <response>
+    <result code="2308">
+      <msg>Usage limit exceeded</msg>
+    </result>
+  </response>
+</epp>`,
+
 } as const;
 
 export function generateResponse<T extends keyof ResponseTypes>(
