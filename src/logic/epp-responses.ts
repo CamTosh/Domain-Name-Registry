@@ -23,6 +23,8 @@ interface InfoResponseData extends Domain {
 
 type ResponseTypes = {
   authError: never;
+  invalidDomain: never;
+  domainUnavailable: never;
   checkResponse: CheckResponseData;
   createError: never;
   createSuccess: CreateResponseData;
@@ -71,6 +73,23 @@ const responses = {
   </response>
 </epp>`,
 
+  invalidDomain: () => `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<epp xmlns="urn:ietf:params:xml:ns:epp-1.0">
+  <response>
+    <result code="2005">
+      <msg>Invalid domain name format</msg>
+    </result>
+  </response>
+</epp>`,
+
+  domainUnavailable: () => `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<epp xmlns="urn:ietf:params:xml:ns:epp-1.0">
+  <response>
+    <result code="2302">
+      <msg>Domain name is not available</msg>
+    </result>
+  </response>
+</epp>`,
 
   createError: () => `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <epp xmlns="urn:ietf:params:xml:ns:epp-1.0">

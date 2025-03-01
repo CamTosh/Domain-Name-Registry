@@ -5,6 +5,7 @@ import type { AppState, LoginCommand, CheckCommand, CreateCommand, InfoCommand }
 import { generateResponse } from "../logic/epp-responses";
 import { checkRateLimit } from "../logic/rate-limit";
 import { parseXml } from "../logic/xml";
+import { isValidDomain } from "../utils/domains";
 
 export async function handleEppRequest(socket: Socket, data: Buffer, state: AppState) {
   const clientIP = socket.remoteAddress;
@@ -115,20 +116,35 @@ function handleCreate(socket: Socket, command: CreateCommand, state: AppState) {
       return;
     }
 
-    queries.createDomain(state.db, command.domain, command.registrar);
-    const domain = queries.getDomainInfo(state.db, command.domain);
+    const domain = command.domain.toLowerCase();
 
-    // Maybe wrote a better check
-    if (!domain || domain.registrar !== command.registrar) {
-      socket.write(generateResponse("notFound"));
+    // Validate domain name
+    if (!isValidDomain(domain)) {
+      socket.write(generateResponse("invalidDomain"));
+      return;
+    }
+
+    // Check if domain is available
+    if (!queries.isDomainAvailable(state.db, domain)) {
+      socket.write(generateResponse("domainUnavailable"));
+      return;
+    }
+
+    // Create the domain
+    queries.createDomain(state.db, domain, command.registrar);
+    const domainInfo = queries.getDomainInfo(state.db, domain);
+
+    if (!domainInfo) {
+      socket.write(generateResponse("createError"));
       return;
     }
 
     socket.write(generateResponse("createSuccess", {
-      ...domain,
+      ...domainInfo,
       sessionId: command.sessionId
     }));
   } catch (error) {
+    logger.error("Create domain error:", error);
     socket.write(generateResponse("createError"));
   }
 }

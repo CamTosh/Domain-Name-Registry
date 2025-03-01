@@ -1,5 +1,6 @@
 import { Database } from "bun:sqlite";
 import type { Domain, Registrar } from "./types";
+import { calculateExpiryDate } from "./utils/domains";
 
 export function initializeDatabase(db: Database) {
   db.run(`
@@ -36,15 +37,30 @@ export const queries = {
     db.prepare("SELECT name FROM domains WHERE name = ?")
       .get(domain) as Pick<Domain, 'name'> | undefined,
 
-  createDomain: (db: Database, domain: string, registrar: string) =>
-    db.prepare(`
+  createDomain: (db: Database, domain: string, registrar: string) => {
+    const now = Date.now();
+    const expiryDate = calculateExpiryDate();
+
+    return db.prepare(`
       INSERT INTO domains (
         name,
         registrar,
         created_at,
-        status
-      ) VALUES (?, ?, ?, 'active')
-    `).run(domain, registrar, Date.now()),
+        status,
+        expiry_date
+      ) VALUES (?, ?, ?, 'active', ?)
+    `).run(domain.toLowerCase(), registrar, now, expiryDate);
+  },
+  isDomainAvailable: (db: Database, domain: string): boolean => {
+    const result = db.prepare(`
+      SELECT status
+      FROM domains
+      WHERE name = ?
+      AND status = 'active'
+    `).get(domain.toLowerCase());
+
+    return !result;
+  },
 
   getDomainInfo: (db: Database, domain: string): Domain | undefined =>
     db.prepare("SELECT * FROM domains WHERE name = ?")
