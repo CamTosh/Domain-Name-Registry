@@ -62,7 +62,7 @@ const servers = {
       "/registrar/create": (req) => handleRegistrarCreate(req, state),
 
       "/today-expiration": () => {
-        const domains = queries.todayExpiration(state.db);
+        const domains = queries.todayExpirationWithScore(state.db);
         const names = domains.map((domain) => domain.name);
 
         return new Response(JSON.stringify(names));
