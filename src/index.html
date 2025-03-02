@@ -4,6 +4,32 @@
   <meta charset="UTF-8">
   <title>.TSH Registry - Domain Drop Catching Game</title>
   <style>
+  .rare-count {
+    background: #FFEBEE;  // Light red background
+    color: #D32F2F;      // Darker red text
+    font-weight: bold;
+  }
+
+  .valuable-count {
+    background: #E8F5E9;  // Light green background
+    color: #388E3C;      // Darker green text
+    font-weight: bold;
+  }
+
+  .average-count {
+    background: #E3F2FD;  // Light blue background
+    color: #1976D2;      // Darker blue text
+  }
+
+  .low-count {
+    background: #F5F5F5;  // Light gray background
+    color: #616161;      // Darker gray text
+  }
+  #leaderboard th {
+    font-size: 0.9em;
+    text-align: center;
+  }
+
   #leaderboard {
     width: 100%;
     border-collapse: collapse;
@@ -11,6 +37,7 @@
 
   #leaderboard th,
   #leaderboard td {
+    text-align: center;
     border: 1px solid #000;
     padding: 5px;
   }
@@ -109,11 +136,63 @@
     </ul>
     <table id="leaderboard">
       <tr>
+        <th>#</th>
         <th>Registrar</th>
-        <th>Today's Score</th>
-        <th>Weekly Score</th>
+        <th>Total Score</th>
+        <th>Today</th>
+        <th>Rare<br/>(90-100)</th>
+        <th>Valuable<br/>(70-89)</th>
+        <th>Average<br/>(30-69)</th>
+        <th>Low<br/>(1-29)</th>
       </tr>
     </table>
+  </section>
+
+  <section>
+    <h2>Domain Scoring System</h2>
+    <p>Each domain in the registry has a value score from 1 to 100, distributed as follows:</p>
+    <ul>
+      <li>Rare (90-100): 5% of domains
+        <ul>
+          <li>These are the most valuable domains</li>
+          <li>Highest impact on leaderboard ranking</li>
+        </ul>
+      </li>
+      <li>Valuable (70-89): 15% of domains
+        <ul>
+          <li>Above average value</li>
+          <li>Significant impact on rankings</li>
+        </ul>
+      </li>
+      <li>Average (30-69): 60% of domains
+        <ul>
+          <li>Common domains</li>
+          <li>Moderate ranking value</li>
+        </ul>
+      </li>
+      <li>Low (1-29): 20% of domains
+        <ul>
+          <li>Basic domains</li>
+          <li>Minimal impact on rankings</li>
+        </ul>
+      </li>
+    </ul>
+
+    <h3>Leaderboard Scoring</h3>
+    <p>The leaderboard rankings are determined by:</p>
+    <ul>
+      <li>Daily Score: Sum of domain scores caught in the current day</li>
+      <li>Weekly Score: Cumulative sum of domain scores for the week</li>
+      <li>Example:
+        <ul>
+          <li>Catching one rare domain (score 95) > catching three low-value domains (scores 20+15+10)</li>
+          <li>Strategic targeting of high-value domains is key to climbing the rankings</li>
+        </ul>
+      </li>
+    </ul>
+
+    <p>You can check a domain's score using the WHOIS service:</p>
+    <pre><code>whois -h whois.nic.bullshit.video example.tsh</code></pre>
   </section>
 
 
@@ -280,26 +359,22 @@
   </section>
 </body>
 <script>
-  async function fetchLeaderboard() {
+async function fetchLeaderboard() {
     try {
       const response = await fetch('/leaderboard');
       const data = await response.json();
       const table = document.getElementById('leaderboard');
 
+      // Clear existing rows
       while (table.rows.length > 1) {
         table.deleteRow(1);
-      }
-
-      if (table.rows[0].cells.length === 3) {
-        const posHeader = table.rows[0].insertCell(0);
-        posHeader.textContent = "#";
-        posHeader.className = "position";
       }
 
       data.forEach((entry, index) => {
         const row = table.insertRow();
 
-        const posCell = row.insertCell(0);
+        // Position column with trophy
+        const posCell = row.insertCell();
         posCell.className = "position";
         if (index < 3) {
           posCell.classList.add(`trophy-${index + 1}`);
@@ -307,9 +382,32 @@
           posCell.textContent = index + 1;
         }
 
-        row.insertCell(1).textContent = entry.registrar_id;
-        row.insertCell(2).textContent = entry.today_count;
-        row.insertCell(3).textContent = entry.domain_count;
+        // Add other cells
+        row.insertCell().textContent = entry.registrar_id;
+
+        // Total score with color based on rank
+        const scoreCell = row.insertCell();
+        scoreCell.textContent = entry.total_score;
+
+        // Today's catches
+        row.insertCell().textContent = entry.today_count;
+
+        // Domain category counts with color coding
+        const rareCell = row.insertCell();
+        rareCell.textContent = entry.rare_count;
+        rareCell.className = 'rare-count';
+
+        const valuableCell = row.insertCell();
+        valuableCell.textContent = entry.valuable_count;
+        valuableCell.className = 'valuable-count';
+
+        const averageCell = row.insertCell();
+        averageCell.textContent = entry.average_count;
+        averageCell.className = 'average-count';
+
+        const lowCell = row.insertCell();
+        lowCell.textContent = entry.low_count;
+        lowCell.className = 'low-count';
       });
     } catch (error) {
       console.error('Error fetching leaderboard:', error);
