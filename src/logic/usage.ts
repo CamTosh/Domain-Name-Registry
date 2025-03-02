@@ -57,11 +57,7 @@ export class UsageManager {
     }
   }
 
-  async checkUsage(registrarId: string): Promise<{
-    allowed: boolean;
-    delay: number;
-    penaltyTokens: number;
-  }> {
+  checkUsage(registrarId: string): { allowed: boolean; delay: number; penaltyTokens: number; } {
     const stats = this.getOrCreateStats(registrarId);
     this.resetCountersIfNeeded(stats);
 

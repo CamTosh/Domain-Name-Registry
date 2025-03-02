@@ -21,7 +21,6 @@ export async function handleEppRequest(socket: Socket, data: Buffer, state: AppS
     const request = data.toString();
     command = parseXml(request);
 
-
     if (command.type === "login") {
       registrarId = command.id;
     } else {
@@ -40,7 +39,7 @@ export async function handleEppRequest(socket: Socket, data: Buffer, state: AppS
     }
 
     // Check usage limits for the registrar
-    const usage = await state.usageManager.checkUsage(registrarId);
+    const usage = state.usageManager.checkUsage(registrarId);
     if (!usage.allowed) {
       socket.write(generateResponse("usageLimitExceeded"));
       return;

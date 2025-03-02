@@ -35,6 +35,7 @@ export interface Domain {
   name: string;
   status: 'active' | 'inactive' | 'pending' | 'deleted';
   registrar: string;
+  score: number;
   created_at: number;
   updated_at: number | null;
   expiry_date: number | null;
@@ -45,6 +46,8 @@ export interface Registrar {
   password: string;
   credits: number;
 }
+
+export type SafeRegistrar = Omit<Registrar, 'password'>;
 
 export interface Session {
   registrar: string;

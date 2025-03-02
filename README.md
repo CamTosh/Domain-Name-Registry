@@ -2,6 +2,8 @@
 
 A modern domain registry system implementing EPP (Extensible Provisioning Protocol) and WHOIS services for the .tsh TLD, built with Bun and 0 dependencies.
 
+Full rules: https://nic.bullshit.video
+
 Hosted instance:
 - `whois.nic.bullshit.video` (Example: `whois -h whois.nic.bullshit.video nic.tsh`)
 - `epp.nic.bullshit.video`
