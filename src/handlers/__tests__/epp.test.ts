@@ -1,7 +1,7 @@
 import { expect, test, describe, beforeEach } from "bun:test";
 import { handleEppRequest } from "../../../src/handlers/epp";
 import type { AppState, Domain } from "../../../src/types";
-import { initializeDatabase } from "../../database";
+import { initializeDatabase, queries } from "../../database";
 import { Database } from "bun:sqlite";
 import { MockSocket } from "../../utils/test";
 import { SessionManager } from "../../logic/session";
@@ -16,6 +16,8 @@ describe("EPP Handler", () => {
 
     const db = new Database(":memory:");
     initializeDatabase(db);
+    db.run(`delete from registrars;`)
+    queries.createRegistrar(db, 'test1', 'test1');
 
     state = {
       db,
