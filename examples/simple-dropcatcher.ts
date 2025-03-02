@@ -147,7 +147,7 @@ async function monitorDomains(registrarId: string) {
     errors: 0
   };
 
-  const createdDomains: string[] = [];
+  const createdDomains = new Map<string, Date>();
 
   // Store interval reference for cleanup
   monitorInterval = setInterval(async () => {
@@ -169,25 +169,25 @@ async function monitorDomains(registrarId: string) {
         console.write(`\rAttempting: ${domain}`);
 
         let success = await createDomain(domain, registrarId);
-
         if (success) {
-          createdDomains.push(domain);
+          createdDomains.set(domain, new Date());
           stats.success++;
           domains.delete(domain);
-        } else {
-          console.write(`\r× Failed: ${domain}        \n`);
         }
 
         attempting.delete(domain);
       } catch (error) {
         stats.errors++;
         attempting.delete(domain);
-        console.write(`\r! Error: ${domain}            \n`);
       }
     }
 
     stats.domains = domains.size;
-    createdDomains.forEach((domain) => console.write(`\r✓ Registered: ${domain}    \n`));
+
+    createdDomains.entries().forEach(([domain, registeredAt]) => {
+      console.write(`\r✓ [${registeredAt.toLocaleTimeString()}] Registered: ${domain}    \n`)
+    });
+
   }, MAIN_LOOP_INTERVAL);
 }
 
