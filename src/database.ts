@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
-import type { Domain, Registrar } from "./types";
-import { calculateExpiryDate } from "./utils/domains";
+import type { Domain, SafeRegistrar, Registrar } from "./types";
+import { calculateExpiryDate, generateDomainScore } from "./utils/domains";
 
 export function initializeDatabase(db: Database) {
   // db.run(`delete from domains;`);
@@ -13,7 +13,8 @@ export function initializeDatabase(db: Database) {
       registrar TEXT,
       created_at INTEGER,
       updated_at INTEGER,
-      expiry_date INTEGER
+      expiry_date INTEGER,
+      score INTEGER CHECK(score BETWEEN 1 AND 100)
     )
   `);
 
@@ -58,7 +59,13 @@ export const queries = {
     db.prepare("SELECT name FROM domains WHERE name = ?")
       .get(domain.toLowerCase()) as Pick<Domain, 'name'> | undefined,
 
-  createDomain: (db: Database, domain: string, registrar: string, expiryDate = calculateExpiryDate()) => {
+  createDomain: (
+    db: Database,
+    domain: string,
+    registrar: string,
+    expiryDate = calculateExpiryDate(),
+    score = generateDomainScore(),
+  ) => {
     const now = Date.now();
 
     return db.prepare(`
@@ -67,9 +74,10 @@ export const queries = {
         registrar,
         created_at,
         status,
-        expiry_date
-      ) VALUES (?, ?, ?, 'active', ?)
-    `).run(domain.toLowerCase(), registrar, now, expiryDate);
+        expiry_date,
+        score
+      ) VALUES (?, ?, ?, 'active', ?, ?)
+    `).run(domain.toLowerCase(), registrar, now, expiryDate, score);
   },
 
   isDomainAvailable: (db: Database, domain: string): { available: boolean, status?: string } => {
@@ -125,16 +133,16 @@ export const queries = {
   getRegistrarInfo: (db: Database, registrarId: string) =>
     db.prepare(
       "SELECT id, credits FROM registrars WHERE id = ?"
-    ).get(registrarId) as Omit<Registrar, 'password'> | undefined,
+    ).get(registrarId) as SafeRegistrar | undefined,
 
-  checkRegistrar: (db: Database, id: string, password: string): Pick<Registrar, 'id'> | undefined => {
+  checkRegistrar: (db: Database, id: string, password: string): Pick<SafeRegistrar, 'id'> | undefined => {
     const registrar = db.prepare(
       "SELECT id, password FROM registrars WHERE id = ?"
     ).get(id) as (Pick<Registrar, 'id' | 'password'> | undefined);
 
     if (!registrar) return undefined;
 
-    const isValid = Bun.password.verifySync(password, registrar.password);
+    const isValid = Bun.password.verifySync(password, registrar.password, 'bcrypt');
     return isValid ? { id: registrar.id } : undefined;
   },
 
@@ -142,7 +150,7 @@ export const queries = {
     const initialCredits = 1000;
 
     try {
-      const hashedPassword = Bun.password.hashSync(password);
+      const hashedPassword = Bun.password.hashSync(password, 'bcrypt');
 
       db.prepare(`
         INSERT INTO registrars (id, password, credits)
@@ -176,6 +184,36 @@ export const queries = {
       AND expiry_date < ?
       order by name asc
     `).all(todayStart, tomorrowStart) as { name: string }[];
+  },
+  todayExpirationWithScore: (db: Database) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStart = today.getTime();
+
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStart = tomorrow.getTime();
+
+    return db.prepare(`
+      SELECT
+        name,
+        score,
+        CASE
+          WHEN score >= 90 THEN 'Rare'
+          WHEN score >= 70 THEN 'Valuable'
+          WHEN score >= 30 THEN 'Average'
+          ELSE 'Low'
+        END as category
+      FROM domains
+      WHERE status = 'active'
+      AND expiry_date >= ?
+      AND expiry_date < ?
+      ORDER BY score DESC, name ASC
+    `).all(todayStart, tomorrowStart) as {
+      name: string;
+      score: number;
+      category: 'Rare' | 'Valuable' | 'Average' | 'Low';
+    }[];
   },
 
   /*

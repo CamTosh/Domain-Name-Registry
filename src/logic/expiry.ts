@@ -3,6 +3,12 @@ import type { AppState } from "../types";
 import { queries } from "../database";
 
 const SESSION_DURATION = 42 * 60 * 1000; // 42 minutes
+const categoryRanges = {
+  'Rare': '90-100',
+  'Valuable': '70-89',
+  'Average': '30-69',
+  'Low': '1-29'
+};
 
 export async function handleDomainExpiry(state: AppState, duration = SESSION_DURATION) {
   const sessionStart = new Date();
@@ -15,14 +21,33 @@ Expected end: ${sessionEnd.toISOString()}
 Duration: ${duration / 1000 / 60} minutes
 =========================`);
 
-
-  const expiringDomains = queries.todayExpiration(state.db);
+  const expiringDomains = queries.todayExpirationWithScore(state.db);
   if (expiringDomains.length === 0) {
     logger.info("No domains expiring today");
     logger.info("=== Session ended (no domains) ===");
 
     return;
   }
+  const domainsByCategory = expiringDomains.reduce((acc, domain) => {
+    acc[domain.category] = acc[domain.category] || [];
+    acc[domain.category].push(domain);
+    return acc;
+  }, {} as Record<string, typeof expiringDomains>);
+
+
+  const formatCategory = (domains: typeof expiringDomains) => {
+    const avgScore = (domains.reduce((sum, d) => sum + d.score, 0) / domains.length).toFixed(1);
+    const domainList = domains.map(d => `${d.name} (${d.score})`).join(', ');
+
+    return `
+    ${domains[0].category} (${categoryRanges[domains[0].category]}):
+      ${domains.length} domain${domains.length > 1 ? 's' : ''}
+      Average score: ${avgScore}
+      Domains: ${domainList}`;
+  };
+
+  logger.info(`Score Distribution for ${expiringDomains.length} domains: ${Object.values(domainsByCategory).map(formatCategory).join('\n')}`);
+
 
   logger.info(`Processing ${expiringDomains.length} expiring domains`);
 
