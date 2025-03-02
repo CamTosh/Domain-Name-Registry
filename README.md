@@ -175,8 +175,6 @@ The HTTP API runs on port 3000 and provides the following endpoints:
 
 ### Creating a new registrar:
 
-> Be careful, the passowrd is saved in clear.
-
 ```bash
 curl -X POST http://localhost:3000/registrar/create \
   -H "Content-Type: application/json" \

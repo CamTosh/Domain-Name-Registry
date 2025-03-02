@@ -104,11 +104,6 @@ export const queries = {
     db.prepare("SELECT * FROM domains WHERE name = ?")
       .get(domain.toLowerCase()) as Domain | undefined,
 
-  checkRegistrar: (db: Database, id: string, password: string): Pick<Registrar, 'id'> | undefined =>
-    db.prepare(
-      "SELECT id FROM registrars WHERE id = ? AND password = ?"
-    ).get(id, password) as Pick<Registrar, 'id'> | undefined,
-
   updateDomainStatus: (db: Database, domain: string, status: Domain['status']) =>
     db.prepare(
       "UPDATE domains SET status = ?, updated_at = ? WHERE name = ?"
@@ -127,26 +122,38 @@ export const queries = {
       "UPDATE registrars SET credits = credits + ? WHERE id = ?"
     ).run(credits, registrarId),
 
-  getRegistrarInfo: (db: Database, registrarId: string): Registrar | undefined =>
+  getRegistrarInfo: (db: Database, registrarId: string) =>
     db.prepare(
-      "SELECT * FROM registrars WHERE id = ?"
-    ).get(registrarId) as Registrar | undefined,
+      "SELECT id, credits FROM registrars WHERE id = ?"
+    ).get(registrarId) as Omit<Registrar, 'password'> | undefined,
+
+  checkRegistrar: (db: Database, id: string, password: string): Pick<Registrar, 'id'> | undefined => {
+    const registrar = db.prepare(
+      "SELECT id, password FROM registrars WHERE id = ?"
+    ).get(id) as (Pick<Registrar, 'id' | 'password'> | undefined);
+
+    if (!registrar) return undefined;
+
+    const isValid = Bun.password.verifySync(password, registrar.password);
+    return isValid ? { id: registrar.id } : undefined;
+  },
 
   createRegistrar: (db: Database, id: string, password: string) => {
     const initialCredits = 1000;
 
     try {
+      const hashedPassword = Bun.password.hashSync(password);
+
       db.prepare(`
         INSERT INTO registrars (id, password, credits)
         VALUES (?, ?, ?)
-      `).run(id.toLowerCase(), password, initialCredits);
+      `).run(id.toLowerCase(), hashedPassword, initialCredits);
 
       return { success: true, registrarId: id };
     } catch (error) {
       if ((error as any).code === 'SQLITE_CONSTRAINT') {
         return { success: false, error: 'Registrar ID already exists' };
       }
-
       throw error;
     }
   },

@@ -1,6 +1,6 @@
 export function handleHello(socket: any) {
   const greeting = {
-    svID: "Example EPP server epp.example.com",
+    svID: "Bullshit EPP server for https://nic.bullshit.video/ (.tsh)",
     svDate: new Date().toISOString(),
     versions: ["1.0"],
     langs: ["en"],
