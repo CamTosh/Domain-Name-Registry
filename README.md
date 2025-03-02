@@ -1,123 +1,65 @@
-# TSH Registry - EPP & WHOIS Server
 
-A modern domain registry system implementing EPP (Extensible Provisioning Protocol) and WHOIS services for the .tsh TLD, built with Bun and 0 dependencies.
+# Domain Drop Catching Game - .TSH Registry
 
-Full rules: https://nic.bullshit.video
+A hobby project implementing a domain registry system for practicing drop catching techniques. Built with Bun and zero dependencies.
 
-Hosted instance:
-- `whois.nic.bullshit.video` (Example: `whois -h whois.nic.bullshit.video nic.tsh`)
-- `epp.nic.bullshit.video`
+Live instance: https://nic.bullshit.video
+
+## Overview
+
+Drop catching is the practice of registering domain names the moment they expire. This project provides a playground for developing and testing drop catching algorithms with:
+
+- Random domain releases during a 42-minute window
+- Score-based domain values (1-100)
+- Rate limiting with progressive penalties
+- Real-time competition between registrars
 
 ## Features
 
-- EPP Server (Port 700) for domain registration and management
-- WHOIS Server (Port 43) for domain information lookup
-- HTTP API (Port 3000) for monitoring and metrics
-- Built-in rate limiting
-- Session management
-- SQLite database for persistence
+- EPP Server (Port 700) for domain registration
+- WHOIS Server (Port 43) for domain information
+- Built-in rate limiting with penalties
+- Domain value scoring system (1-100)
+- Automatic domain expiry and replenishment
 
-## Prerequisites
+## System Components
 
-- [Bun](https://bun.sh) runtime
-- WHOIS client (usually pre-installed on Unix systems)
+### Domain Expiry (Cron)
+- Runs daily at 15:00 (France/Paris)
+- 42-minute release window
+- Random release timing for each domain
+- Minimum 42 domains per session
 
-## Setup
+### Rate Limiting
+- 5000 requests/hour
+- 500 requests/minute (~8 requests/second)
+- Penalties after 5 violations:
+  - 1-second delay added to requests
+  - 2 tokens deducted from balance
 
-1. Clone the repository:
+### Domain Scoring
+- Rare (90-100): 5% chance
+- Valuable (70-89): 15% chance
+- Average (30-69): 60% chance
+- Low (1-29): 20% chance
+
+## Usage Examples
+
+### WHOIS Queries
 ```bash
-git clone https://github.com/CamTosh/Domain-Name-Registry
-cd Domain-Name-Registry
+# Domain lookup
+whois -h whois.nic.bullshit.video example.tsh
+
+# Registrar lookup
+whois -h whois.nic.bullshit.video "registrar test1"
+
+# Help
+whois -h whois.nic.bullshit.video help
 ```
 
-2. Seed the database with initial data:
-```bash
-bun run seed
-```
-
-3. Start the server:
-```bash
-bun run start
-```
-
-## Domain Expiry System
-
-The registry implements an automated domain expiry system that releases expired domains in a random order during a 42-minute window each day.
-
-### How it Works
-
-1. At 15:00 each day, the system identifies domains expiring that day
-2. These domains are released randomly over a 42-minute period (15:00 - 15:42)
-3. When a domain is released, its status changes from 'active' to 'inactive'
-4. Released domains become available for registration
-
-### Cron Setup
-
-1. Edit your crontab:
-```bash
-crontab -e
-```
-
-2. Add this line to run the expiry process at 15:00 daily:
-```bash
-0 15 * * * cd /path/to/registry && bun run expire >> /var/log/registry/expiry.log 2>&1
-```
-
-The cron expression explained:
-```
-┌───────────── minute (0)
-│ ┌───────────── hour (15)
-│ │ ┌───────────── day of month (*)
-│ │ │ ┌───────────── month (*)
-│ │ │ │ ┌───────────── day of week (*)
-│ │ │ │ │
-0 15 * * *
-```
-
-### Prerequisites
-
-1. Create log directory:
-```bash
-sudo mkdir -p /var/log/registry
-sudo chown $USER:$USER /var/log/registry
-```
-
-2. Test the cron job:
-```bash
-bun run expire
-tail -f /var/log/registry/expiry.log
-```
-
-## Using WHOIS
-
-The WHOIS service runs on port 43 and supports several query types:
-
-### Domain Lookup
-```bash
-whois -h localhost domain.tsh
-```
-
-Example:
-```bash
-whois -h localhost nic.tsh
-```
-
-### Registrar Lookup
-```bash
-whois -h localhost "registrar test1"
-```
-
-### Help
-```bash
-whois -h localhost help
-```
-
-## Using the EPP Server
-
-The EPP server runs on port 700 and supports standard EPP commands. Here are some example XML commands:
-
-### Login
+### EPP Commands
 ```xml
+<!-- Login -->
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <epp xmlns="urn:ietf:params:xml:ns:epp-1.0">
   <command>
@@ -127,10 +69,8 @@ The EPP server runs on port 700 and supports standard EPP commands. Here are som
     </login>
   </command>
 </epp>
-```
 
-### Check Domain
-```xml
+<!-- Check Domain -->
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <epp xmlns="urn:ietf:params:xml:ns:epp-1.0">
   <command>
@@ -140,15 +80,13 @@ The EPP server runs on port 700 and supports standard EPP commands. Here are som
     <clTRID>ABC-12345</clTRID>
   </command>
 </epp>
-```
 
-### Create Domain
-```xml
+<!-- Create Domain -->
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <epp xmlns="urn:ietf:params:xml:ns:epp-1.0">
   <command>
     <create>
-      <domain:name>mynewdomain.tsh</domain:name>
+      <domain:name>example.tsh</domain:name>
       <clID>test1</clID>
     </create>
     <clTRID>ABC-12345</clTRID>
@@ -156,69 +94,25 @@ The EPP server runs on port 700 and supports standard EPP commands. Here are som
 </epp>
 ```
 
-## Test Accounts
+## Development Setup
 
-The system comes with two test registrar accounts:
-
-- ID: `test1`, Password: `test1`
-- ID: `test2`, Password: `test2`
-
-Each test account comes with 1000 initial credits.
-
-## API Endpoints
-
-The HTTP API runs on port 3000 and provides the following endpoints:
-
-- `GET /health` - Service health check
-- `GET /leaderboard` - Registrar leaderboard
-- `GET /today-expiration` - List all the domains who will expire today
-- `GET /analytics` - Get registrar or domain analytics for the past day
-- `POST /registrar/create` - Registrar creation
-
-### Creating a new registrar:
-
+1. Install [Bun](https://bun.sh)
+2. Clone and install:
 ```bash
-curl -X POST http://localhost:3000/registrar/create \
-  -H "Content-Type: application/json" \
-  -d '{
-    "id": "myregistrar",
-    "password": "mypassword123"
-  }'
+git clone https://github.com/CamTosh/Domain-Name-Registry
+cd Domain-Name-Registry
 ```
 
-## Development
-
-```
-epp-server/
-├── src/
-│   ├── cron/               # Cron stuff
-│   ├── handlers/           # Request handlers
-│   │   ├── epp.ts         # EPP protocol handler
-│   │   ├── greeting.ts    # EPP greeting handler
-│   │   └── whois.ts       # WHOIS protocol handler
-│   │
-│   ├── logic/             # Business logic
-│   ├── routes/            # API routes
-│   ├── utils/             # Utility functions
-│   ├── scripts/           # Scripts
-│   │   └── seed.ts        # Database seeding
-│   │   └── test.ts        # Simulate a snap session
-│   │
-│   ├── database.ts        # Database operations
-│   ├── types.ts           # TypeScript type definitions
-│   └── index.ts           # Application entry point
-│
-├── package.json
-├── tsconfig.json
-└── README.md
-```
-
-### Running Tests
-
+3. Start the servers:
 ```bash
-bun test
+bun start
 ```
+
+## Full Rules & Documentation
+
+For complete game rules, scoring system, and API documentation, visit:
+[https://nic.bullshit.video](https://nic.bullshit.video)
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+This is a hobby project aimed at creating interesting technical challenges around domain drop catching. Contributions and creative drop-catching solutions are welcome!

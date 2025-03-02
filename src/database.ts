@@ -168,14 +168,13 @@ export const queries = {
   /*
    * Expiry
   */
-  todayExpiration: (db: Database) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayStart = today.getTime();
+  domainWhoExpire: (db: Database, targetDate: Date = new Date()) => {
+    targetDate.setHours(0, 0, 0, 0);
+    const dayStart = targetDate.getTime();
 
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStart = tomorrow.getTime();
+    const nextDay = new Date(targetDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+    const dayEnd = nextDay.getTime();
 
     return db.prepare(`
       SELECT name FROM domains
@@ -183,7 +182,7 @@ export const queries = {
       AND expiry_date >= ?
       AND expiry_date < ?
       order by name asc
-    `).all(todayStart, tomorrowStart) as { name: string }[];
+    `).all(dayStart, dayEnd) as { name: string }[];
   },
   todayExpirationWithScore: (db: Database) => {
     const today = new Date();

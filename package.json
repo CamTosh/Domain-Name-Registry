@@ -7,7 +7,8 @@
     "test": "bun test",
     "seed": "bun run src/scripts/seed.ts",
     "start": "bun src/index.ts",
-    "expire": "bun run src/cron/expiry.ts"
+    "expire": "bun run src/cron/expiry.ts",
+    "domain": "bun run src/cron/domain.ts"
   },
   "devDependencies": {
     "@types/bun": "latest"
