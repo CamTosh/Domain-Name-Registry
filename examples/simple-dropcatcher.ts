@@ -126,7 +126,19 @@ async function createDomain(domain: string, registrarId: string) {
 }
 
 async function monitorDomains(registrarId: string) {
+  let cycle = 0;
+  let stats = {
+    domains: domains.size,
+    attempts: 0,
+    success: 0,
+    errors: 0
+  };
+
+  const createdDomains: string[] = [];
   setInterval(async () => {
+    console.clear();
+    console.log(`Dropcatch Monitor - Cycle ${++cycle}\nDomains: ${stats.domains} | Attempts: ${stats.attempts} | Success: ${stats.success} | Errors: ${stats.errors}\n─────────────────────────────────────────────────────`);
+
     for (const domain of domains) {
       if (attempting.has(domain)) continue;
 
@@ -135,21 +147,33 @@ async function monitorDomains(registrarId: string) {
 
         if (isAvailable) {
           attempting.add(domain);
-          const success = await createDomain(domain, registrarId);
+          stats.attempts++;
+          console.write(`\rAttempting: ${domain}`);
+
+          let success = await createDomain(domain, registrarId);
 
           if (success) {
-            console.log(`Successfully registered: ${domain}`);
+            createdDomains.push(domain);
+
+            stats.success++;
             domains.delete(domain);
+          } else {
+            console.write(`\r× Failed: ${domain}        \n`);
           }
 
           attempting.delete(domain);
         }
       } catch (error) {
-        console.error(`Error checking domain ${domain}:`, error);
+        stats.errors++;
         attempting.delete(domain);
+        console.write(`\r! Error: ${domain}            \n`);
       }
     }
+
+    stats.domains = domains.size;
+    createdDomains.forEach((domain) => console.write(`\r✓ Registered: ${domain}    \n`))
   }, 100);
+
 }
 
 async function start(registrarId: string, password: string) {
