@@ -41,7 +41,7 @@ const API_URL = env.NODE_ENV === "production" ? "https://nic.bullshit.video/toda
 const EPP_HOST = env.NODE_ENV === 'production' ? "epp.nic.bullshit.video" : "localhost";
 const EPP_PORT = 700;
 
-const MAIN_LOOP_INTERVAL = 100;
+const MAIN_LOOP_INTERVAL = 1_000;
 const DOMAIN_CHECK_INTERVAL = 5_000;
 
 const args = process.argv.slice(2);
@@ -54,6 +54,8 @@ start(registrarId, password);
 /*
  * Main Loops
 */
+let clTRID = '<todo>';
+
 let monitorInterval: Timer | null = null;
 let domainCheckInterval: Timer | null = null;
 
@@ -165,43 +167,52 @@ async function createEPPSession(registrarId: string, password: string) {
     hostname: EPP_HOST,
     port: EPP_PORT,
     socket: {
-      data(socket, data) {
+      open(socket) { },
+      data(_socket, data) {
         const response = new TextDecoder().decode(data);
         if (responseResolve) {
           responseResolve(response);
           responseResolve = null;
         }
       },
-      error(socket, error) {
+      error(_socket, error) {
         console.error('Socket error:', error);
         if (responseResolve) {
           responseResolve('');
           responseResolve = null;
         }
       },
-      close(socket) {
+      close(_socket) {
         console.log('Socket closed');
         if (responseResolve) {
           responseResolve('');
           responseResolve = null;
         }
       },
-      open(socket) {
-        console.log('Socket opened');
-      }
     }
   });
 
   if (!session) {
-    throw 'no session';
+    throw new Error(`No session`);
   }
 
   session.write(loginXML);
-  const response = await waitForResponse();
+  await waitForResponse(); // Greeting, we don't care
 
-  if (!response.includes("<result code=\"1000\"") && !response.includes("<greeting>")) {
-    throw new Error("EPP login failed");
+  // Send login command
+  session.write(loginXML);
+  const loginResponse = await waitForResponse();
+
+  if (!loginResponse.includes("<result code=\"1000\"")) {
+    throw new Error(`EPP login failed: ${loginResponse}`);
   }
+
+  clTRID = loginResponse.match(/<clTRID>([^<]+)<\/clTRID>/)?.[1] || '';
+  if (!clTRID) {
+    throw new Error('EPP login failed: No clTRID');
+  }
+
+  console.log(`Successfully logged in to EPP server: ${clTRID}`);
 }
 
 async function checkDomain(domain: string) {
@@ -213,7 +224,7 @@ async function checkDomain(domain: string) {
         <check>
           <domain:name>${domain}</domain:name>
         </check>
-        <clTRID>${Math.random().toString(36)}</clTRID>
+        <clTRID>${clTRID}</clTRID>
       </command>
     </epp>`;
 
@@ -233,7 +244,7 @@ async function createDomain(domain: string, registrarId: string) {
           <domain:name>${domain}</domain:name>
           <clID>${registrarId}</clID>
         </create>
-        <clTRID>${Math.random().toString(36)}</clTRID>
+        <clTRID>${clTRID}</clTRID>
       </command>
     </epp>`;
 
