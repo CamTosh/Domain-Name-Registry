@@ -1,45 +1,150 @@
-import type { TCPSocket } from "bun";
+import { env, sleep, type TCPSocket } from "bun";
 
 /*
+ * Domain Drop Catcher for .TSH Registry
  *
- * How to use it?
- * `bun run examples/simple-dropcatcher.ts --id=test1 --password=test1`
+ * Usage:
+ * bun run simple-dropcatcher.ts --id=<registrar_id> --password=<password>
  *
-*/
-// const EPP_HOST = "epp.nic.bullshit.video";
-// const EPP_PORT = 700;
-// const API_URL = "https://nic.bullshit.video/today-expiration";
+ *
+ * This script monitors and attempts to register expiring domains by:
+ * 1. Fetching the list of expiring domains from the API
+ * 2. Creating an EPP session with the registry
+ * 3. Running two parallel monitoring loops:
+ *    - Main Loop (100ms): Checks domain availability and attempts registration
+ *    - Domain Check Loop (5s): Updates the domain list from the API
+ *
+ * Features:
+ * - Automatic session management and cleanup
+ * - Real-time statistics display
+ * - Registration timestamp tracking
+ * - Rate-limiting friendly (100ms between checks)
+ * - Graceful shutdown on completion or interrupt
+ *
+ * Limitations:
+ * - Basic implementation: does not consider domain scores/values
+ * - Attempts to register all available domains equally
+ * - No prioritization or strategic catching
+ *
+ * Environment:
+ * Development (default):
+ *   EPP_HOST: localhost
+ *   API_URL: http://localhost:3000/today-expiration
+ *
+ * Production (NODE_ENV=production):
+ *   EPP_HOST: epp.nic.bullshit.video
+ *   API_URL: https://nic.bullshit.video/today-expiration
+ *
+ */
 
-const EPP_HOST = "localhost";
+const API_URL = env.NODE_ENV === "production" ? "https://nic.bullshit.video/today-expiration" : "http://localhost:3000/today-expiration";
+const EPP_HOST = env.NODE_ENV === 'production' ? "epp.nic.bullshit.video" : "localhost";
 const EPP_PORT = 700;
-const API_URL = "http://localhost:3000/today-expiration";
 
 const MAIN_LOOP_INTERVAL = 100;
 const DOMAIN_CHECK_INTERVAL = 5_000;
-
-let session: TCPSocket | null = null;
-let domains: Set<string> = new Set();
-let attempting: Set<string> = new Set();
-
-let monitorInterval: Timer | null = null;
-let domainCheckInterval: Timer | null = null;
-
-let responseResolve: ((value: string) => void) | null = null;
 
 const args = process.argv.slice(2);
 const registrarId = args.find((arg) => arg.startsWith('--id='))?.split('=')[1] || 'test1';
 const password = args.find((arg) => arg.startsWith('--password='))?.split('=')[1] || 'test1';
 
-function waitForResponse(timeout = 5000): Promise<string> {
-  return new Promise((resolve) => {
-    responseResolve = resolve;
-    setTimeout(() => {
-      if (responseResolve) {
-        responseResolve('');
-        responseResolve = null;
+process.on('SIGINT', () => shutdown('\nShutting down...', 0));
+start(registrarId, password);
+
+/*
+ * Main Loops
+*/
+let monitorInterval: Timer | null = null;
+let domainCheckInterval: Timer | null = null;
+
+let session: TCPSocket | null = null;
+let domains: Set<string> = new Set();
+let attempting: Set<string> = new Set();
+
+async function start(registrarId: string, password: string) {
+  console.log(`Starting drop catcher with registrar ID: ${registrarId}`);
+
+  const expiringDomains = await fetch(API_URL).then((res) => res.json());
+  domains = new Set(expiringDomains);
+  console.log(`Monitoring ${domains.size} domains.`);
+
+  await sleep(2_000);
+
+  await createEPPSession(registrarId, password);
+  await monitorDomains(registrarId);
+
+  // Start checking remaining domains every 5 seconds
+  domainCheckInterval = setInterval(async () => {
+    try {
+      const remainingDomains: Set<string> = new Set(
+        await fetch(API_URL).then((res) => res.json())
+      );
+
+      // Update current domains based on API response
+      for (const domain of domains.values()) {
+        if (!remainingDomains.has(domain)) {
+          domains.delete(domain);
+        }
       }
-    }, timeout);
-  });
+
+      if (domains.size === 0) {
+        shutdown('\nNo more domains to monitor. Shutting down...', 0);
+      }
+    } catch { }
+  }, DOMAIN_CHECK_INTERVAL);
+}
+
+async function monitorDomains(registrarId: string) {
+  let cycle = 0;
+  let stats = {
+    domains: domains.size,
+    attempts: 0,
+    success: 0,
+    errors: 0
+  };
+
+  const createdDomains = new Map<string, Date>();
+
+  // Store interval reference for cleanup
+  monitorInterval = setInterval(async () => {
+    console.clear();
+    const now = new Date().toLocaleTimeString();
+    console.log(`Dropcatch Monitor - Cycle ${++cycle} - ${now}\nDomains: ${stats.domains} | Attempts: ${stats.attempts} | Success: ${stats.success} | Errors: ${stats.errors}\n─────────────────────────────────────────────────────`);
+
+    for (const domain of domains) {
+      if (attempting.has(domain)) continue;
+
+      try {
+        const isAvailable = await checkDomain(domain);
+        if (!isAvailable) {
+          continue;
+        }
+
+        attempting.add(domain);
+        stats.attempts++;
+        console.write(`\rAttempting: ${domain}`);
+
+        let success = await createDomain(domain, registrarId);
+        if (success) {
+          createdDomains.set(domain, new Date());
+          stats.success++;
+          domains.delete(domain);
+        }
+
+        attempting.delete(domain);
+      } catch (error) {
+        stats.errors++;
+        attempting.delete(domain);
+      }
+    }
+
+    stats.domains = domains.size;
+
+    createdDomains.entries().forEach(([domain, registeredAt]) => {
+      console.write(`\r✓ [${registeredAt.toLocaleTimeString()}] Registered: ${domain}    \n`)
+    });
+
+  }, MAIN_LOOP_INTERVAL);
 }
 
 /*
@@ -138,94 +243,21 @@ async function createDomain(domain: string, registrarId: string) {
   return response.includes("<result code=\"1000\"");
 }
 
-async function monitorDomains(registrarId: string) {
-  let cycle = 0;
-  let stats = {
-    domains: domains.size,
-    attempts: 0,
-    success: 0,
-    errors: 0
-  };
+/*
+ * Utils
+*/
+let responseResolve: ((value: string) => void) | null = null;
 
-  const createdDomains = new Map<string, Date>();
-
-  // Store interval reference for cleanup
-  monitorInterval = setInterval(async () => {
-    console.clear();
-    const now = new Date().toLocaleTimeString();
-    console.log(`Dropcatch Monitor - Cycle ${++cycle} - ${now}\nDomains: ${stats.domains} | Attempts: ${stats.attempts} | Success: ${stats.success} | Errors: ${stats.errors}\n─────────────────────────────────────────────────────`);
-
-    for (const domain of domains) {
-      if (attempting.has(domain)) continue;
-
-      try {
-        const isAvailable = await checkDomain(domain);
-        if (!isAvailable) {
-          continue;
-        }
-
-        attempting.add(domain);
-        stats.attempts++;
-        console.write(`\rAttempting: ${domain}`);
-
-        let success = await createDomain(domain, registrarId);
-        if (success) {
-          createdDomains.set(domain, new Date());
-          stats.success++;
-          domains.delete(domain);
-        }
-
-        attempting.delete(domain);
-      } catch (error) {
-        stats.errors++;
-        attempting.delete(domain);
+function waitForResponse(timeout = 5000): Promise<string> {
+  return new Promise((resolve) => {
+    responseResolve = resolve;
+    setTimeout(() => {
+      if (responseResolve) {
+        responseResolve('');
+        responseResolve = null;
       }
-    }
-
-    stats.domains = domains.size;
-
-    createdDomains.entries().forEach(([domain, registeredAt]) => {
-      console.write(`\r✓ [${registeredAt.toLocaleTimeString()}] Registered: ${domain}    \n`)
-    });
-
-  }, MAIN_LOOP_INTERVAL);
-}
-
-async function start(registrarId: string, password: string) {
-  try {
-    console.log(`Starting drop catcher with registrar ID: ${registrarId}`);
-
-    const expiringDomains = await fetch(API_URL).then((res) => res.json());
-    domains = new Set(expiringDomains);
-    console.log(`Monitoring ${domains.size} domains`);
-
-    await createEPPSession(registrarId, password);
-    await monitorDomains(registrarId);
-
-    // Start checking remaining domains every 5 seconds
-    domainCheckInterval = setInterval(async () => {
-      try {
-        const remainingDomains: Set<string> = new Set(
-          await fetch(API_URL).then((res) => res.json())
-        );
-
-        // Update current domains based on API response
-        for (const domain of domains.values()) {
-          if (!remainingDomains.has(domain)) {
-            domains.delete(domain);
-          }
-        }
-
-        if (domains.size === 0) {
-          shutdown('\nNo more domains to monitor. Shutting down...', 0);
-        }
-      } catch { }
-    }, DOMAIN_CHECK_INTERVAL);
-
-  } catch (error) {
-    console.error("Error starting drop catcher:", error);
-    shutdown('error', 1);
-  }
+    }, timeout);
+  });
 }
 
 function shutdown(message: string, code: number) {
@@ -241,7 +273,3 @@ function shutdown(message: string, code: number) {
 
   process.exit(code);
 }
-
-process.on('SIGINT', () => shutdown('\nShutting down...', 0));
-
-start(registrarId, password);
