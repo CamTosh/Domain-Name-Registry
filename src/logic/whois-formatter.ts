@@ -1,8 +1,8 @@
-import type { Domain, Registrar } from "../types";
+import type { Domain, SafeRegistrar } from "../types";
 
 interface WhoisResponseOptions {
   domain?: Domain;
-  registrar?: Registrar;
+  registrar?: SafeRegistrar;
   domains?: Domain[];
 }
 
@@ -47,18 +47,24 @@ function formatDomainSection(domain: Domain): string {
   ].join('\n');
 }
 
-function formatRegistrarSection(registrar: Registrar, domains?: Domain[]): string {
+function formatRegistrarSection(registrar: SafeRegistrar, domains?: Domain[]): string {
   const section = [
     `registrar:      ${registrar.id}`,
     `organisation:   BULLSHIT Registry Accredited Registrar`,
-    `credits:        ${registrar.credits}`,
+    `domains:        ${(domains || []).length}`,
   ];
 
   if (domains?.length) {
+    const maxDomainLength = Math.max(...domains.map(d => d.name.length));
+
     section.push(
-      ``,
-      `domains:       ${domains.length}`,
-      ...domains.map(d => `    ${d.name.toLowerCase()} (${d.status})`)
+      `    ${'domain'.padEnd(maxDomainLength)} ${'status'.padEnd(10)} - ${'score'.padStart(3)}`,
+      ...domains.map((d) => {
+        const domainPart = d.name.toLowerCase().padEnd(maxDomainLength);
+        const statusPart = `(${d.status})`.padEnd(10);
+        const scorePart = String(d.score).padStart(3);
+        return `    ${domainPart} ${statusPart} - ${scorePart}`;
+      })
     );
   }
 
