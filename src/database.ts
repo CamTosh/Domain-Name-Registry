@@ -25,11 +25,12 @@ export function initializeDatabase(db: Database) {
       credits INTEGER DEFAULT 0
     )
   `);
-
   // Add test registrars if they don't exist
   db.run(`
     INSERT OR IGNORE INTO registrars (id, password, credits)
-    VALUES ('test1', 'test1', 1000), ('test2', 'test2', 1000)
+    VALUES
+      ('test1', '${Bun.password.hashSync('test1', 'bcrypt')}', 1000),
+      ('test2', '${Bun.password.hashSync('test2', 'bcrypt')}', 1000)
   `);
 
   db.run(`
